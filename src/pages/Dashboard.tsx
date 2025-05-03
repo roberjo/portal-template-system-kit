@@ -1,13 +1,12 @@
-
 import React, { useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
 import { BarChart, LineChart, PieChart } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
-import rootStore from '../store/RootStore';
+import { useStore } from '../store/StoreContext';
 import { DataGrid } from '../components/ui/DataGrid';
 
 export const Dashboard = observer(() => {
-  const { dataStore, notificationStore, userStore } = rootStore;
+  const { dataStore, notificationStore, userStore } = useStore();
   const { currentUser } = userStore;
   
   // Load data when component mounts

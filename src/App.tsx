@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -13,6 +12,7 @@ import DataGridExample from "./pages/DataGridExample";
 import FormExamples from "./pages/FormExamples";
 import NotFound from "./pages/NotFound";
 import { useEffect } from "react";
+import { StoreProvider } from "./store/StoreContext";
 import "@fontsource/inter/400.css";
 import "@fontsource/inter/500.css";
 import "@fontsource/inter/600.css";
@@ -39,24 +39,26 @@ const App = () => {
   }, []);
   
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<MainLayout><Dashboard /></MainLayout>} />
-            <Route path="/profile" element={<MainLayout><Profile /></MainLayout>} />
-            <Route path="/admin" element={<MainLayout><AdminPanel /></MainLayout>} />
-            <Route path="/notifications" element={<MainLayout><NotificationsPage /></MainLayout>} />
-            <Route path="/data" element={<MainLayout><DataGridExample /></MainLayout>} />
-            <Route path="/forms" element={<MainLayout><Navigate to="/forms/basic" replace /></MainLayout>} />
-            <Route path="/forms/basic" element={<MainLayout><FormExamples /></MainLayout>} />
-            <Route path="*" element={<MainLayout><NotFound /></MainLayout>} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </QueryClientProvider>
+    <StoreProvider>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<MainLayout><Dashboard /></MainLayout>} />
+              <Route path="/profile" element={<MainLayout><Profile /></MainLayout>} />
+              <Route path="/admin" element={<MainLayout><AdminPanel /></MainLayout>} />
+              <Route path="/notifications" element={<MainLayout><NotificationsPage /></MainLayout>} />
+              <Route path="/data" element={<MainLayout><DataGridExample /></MainLayout>} />
+              <Route path="/forms" element={<MainLayout><Navigate to="/forms/basic" replace /></MainLayout>} />
+              <Route path="/forms/basic" element={<MainLayout><FormExamples /></MainLayout>} />
+              <Route path="*" element={<MainLayout><NotFound /></MainLayout>} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </StoreProvider>
   );
 };
 

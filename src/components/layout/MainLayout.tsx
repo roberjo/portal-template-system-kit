@@ -1,18 +1,17 @@
-
 import React from 'react';
 import { observer } from 'mobx-react-lite';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { ModalContainer } from '../modals/ModalContainer';
 import { ToastContainer } from '../notifications/ToastContainer';
-import rootStore from '../../store/RootStore';
+import { useStore } from '../../store/StoreContext';
 
 interface MainLayoutProps {
   children: React.ReactNode;
 }
 
 export const MainLayout = observer(({ children }: MainLayoutProps) => {
-  const { sidebarCollapsed } = rootStore.uiStore;
+  const { sidebarCollapsed } = useStore().uiStore;
   
   return (
     <div className="min-h-screen bg-background flex flex-col">
