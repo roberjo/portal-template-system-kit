@@ -1,10 +1,13 @@
-
 import React, { useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
-import { BarChart, LineChart, PieChart } from 'lucide-react';
+import { BarChart as BarChartIcon, LineChart as LineChartIcon, PieChart as PieChartIcon } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { useStore } from '../store/StoreContext';
 import { DataGrid } from '../components/ui/DataGrid';
+import { 
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, Legend
+} from 'recharts';
 
 export const Dashboard = observer(() => {
   const { dataStore, notificationStore, userStore } = useStore();
@@ -13,9 +16,13 @@ export const Dashboard = observer(() => {
   // Load data when component mounts
   useEffect(() => {
     const loadDashboardData = async () => {
-      await dataStore.fetchData('chart_monthlyActivity');
-      await dataStore.fetchData('chart_userDistribution');
-      await dataStore.fetchData('table_accountActivity');
+      try {
+        await dataStore.fetchData('chart_monthlyActivity');
+        await dataStore.fetchData('chart_userDistribution');
+        await dataStore.fetchData('table_accountActivity');
+      } catch (error) {
+        console.error('Error loading dashboard data:', error);
+      }
     };
     
     loadDashboardData();
@@ -31,6 +38,9 @@ export const Dashboard = observer(() => {
       });
     }
   }, []);
+  
+  // Colors for the pie chart
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
   
   return (
     <div className="space-y-6">
@@ -106,24 +116,44 @@ export const Dashboard = observer(() => {
         <Card>
           <CardHeader className="flex justify-between items-center">
             <CardTitle>User Activity</CardTitle>
-            <LineChart className="h-5 w-5 text-muted-foreground" />
+            <LineChartIcon className="h-5 w-5 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="h-80 flex items-center justify-center bg-muted/20 rounded-md">
-              <div className="text-muted-foreground">
-                {dataStore.loading['chart_monthlyActivity'] ? (
-                  <div className="flex flex-col items-center">
-                    <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mb-2"></div>
-                    <span>Loading chart data...</span>
-                  </div>
-                ) : (
-                  <div className="text-center">
-                    <LineChart className="h-16 w-16 mx-auto mb-2 text-primary/50" />
-                    <p>Line Chart: Monthly User Activity</p>
-                    <p className="text-sm mt-2">Chart would render here in a real implementation</p>
-                  </div>
-                )}
-              </div>
+            <div className="h-80 rounded-md">
+              {dataStore.loading['chart_monthlyActivity'] ? (
+                <div className="flex flex-col items-center justify-center h-full">
+                  <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mb-2"></div>
+                  <span>Loading chart data...</span>
+                </div>
+              ) : dataStore.dashboardCharts.monthlyActivity ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={dataStore.dashboardCharts.monthlyActivity.labels.map((label, index) => ({
+                      name: label,
+                      value: dataStore.dashboardCharts.monthlyActivity.datasets[0].data[index]
+                    }))}
+                    margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip />
+                    <Line
+                      type="monotone"
+                      dataKey="value"
+                      stroke={dataStore.dashboardCharts.monthlyActivity.datasets[0].borderColor || '#8884d8'}
+                      strokeWidth={2}
+                      dot={{ r: 4 }}
+                      activeDot={{ r: 6 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+                  <LineChartIcon className="h-16 w-16 mx-auto mb-2 text-primary/50" />
+                  <p>No chart data available</p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -131,24 +161,48 @@ export const Dashboard = observer(() => {
         <Card>
           <CardHeader className="flex justify-between items-center">
             <CardTitle>User Distribution</CardTitle>
-            <PieChart className="h-5 w-5 text-muted-foreground" />
+            <PieChartIcon className="h-5 w-5 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="h-80 flex items-center justify-center bg-muted/20 rounded-md">
-              <div className="text-muted-foreground">
-                {dataStore.loading['chart_userDistribution'] ? (
-                  <div className="flex flex-col items-center">
-                    <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mb-2"></div>
-                    <span>Loading chart data...</span>
-                  </div>
-                ) : (
-                  <div className="text-center">
-                    <PieChart className="h-16 w-16 mx-auto mb-2 text-primary/50" />
-                    <p>Pie Chart: User Role Distribution</p>
-                    <p className="text-sm mt-2">Chart would render here in a real implementation</p>
-                  </div>
-                )}
-              </div>
+            <div className="h-80 rounded-md">
+              {dataStore.loading['chart_userDistribution'] ? (
+                <div className="flex flex-col items-center justify-center h-full">
+                  <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mb-2"></div>
+                  <span>Loading chart data...</span>
+                </div>
+              ) : dataStore.dashboardCharts.userDistribution ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={dataStore.dashboardCharts.userDistribution.labels.map((label, index) => ({
+                        name: label,
+                        value: dataStore.dashboardCharts.userDistribution.datasets[0].data[index]
+                      }))}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                    >
+                      {dataStore.dashboardCharts.userDistribution.labels.map((entry, index) => (
+                        <Cell 
+                          key={`cell-${index}`} 
+                          fill={dataStore.dashboardCharts.userDistribution.datasets[0].backgroundColor?.[index] || COLORS[index % COLORS.length]} 
+                        />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+                  <PieChartIcon className="h-16 w-16 mx-auto mb-2 text-primary/50" />
+                  <p>No chart data available</p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -157,7 +211,7 @@ export const Dashboard = observer(() => {
       <Card>
         <CardHeader className="flex justify-between items-center">
           <CardTitle>Recent Account Activity</CardTitle>
-          <BarChart className="h-5 w-5 text-muted-foreground" />
+          <BarChartIcon className="h-5 w-5 text-muted-foreground" />
         </CardHeader>
         <CardContent>
           {dataStore.tableData['accountActivity'] && (
