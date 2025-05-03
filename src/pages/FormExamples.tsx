@@ -1,8 +1,9 @@
+
 import React, { useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import { useLocation } from 'react-router-dom';
 import { AlertCircle, Calendar, Check, CreditCard, Landmark } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from '../components/ui/tooltip';
 import { useStore } from '../store/StoreContext';

@@ -1,7 +1,8 @@
+
 import React, { useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
 import { Check, Edit, Plus, Trash, UserX, User, Eye } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { DataGrid } from '../components/ui/DataGrid';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip';
 import rootStore from '../store/RootStore';
