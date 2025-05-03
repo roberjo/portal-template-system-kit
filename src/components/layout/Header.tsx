@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { observer } from 'mobx-react-lite';
+import { useNavigate } from 'react-router-dom';
 import { Bell, Menu, Search, User, LogOut, Settings, UserPlus, UserCheck, ChevronDown } from 'lucide-react';
 import { Input } from '../ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
@@ -68,11 +69,26 @@ const NotificationItem = ({ notification, onRead }: { notification: Notification
 
 // Simplified standalone user menu component
 const UserMenu = observer(() => {
+  const navigate = useNavigate();
   const { userStore } = useStore();
   // Debug: Use a default user if the currentUser is null
   const user = userStore.currentUser || defaultUser;
   
   console.log("UserMenu rendering with user:", user);
+
+  // Handler functions for navigation
+  const handleProfileClick = () => {
+    navigate('/profile');
+  };
+  
+  const handleSettingsClick = () => {
+    navigate('/settings');
+  };
+  
+  const handleLogout = () => {
+    userStore.logout();
+    // Navigation to login page will happen automatically through the auth check
+  };
 
   return (
     <DropdownMenu>
@@ -106,11 +122,11 @@ const UserMenu = observer(() => {
         
         {/* Menu items */}
         <DropdownMenuGroup>
-          <DropdownMenuItem>
+          <DropdownMenuItem onClick={handleProfileClick}>
             <User className="mr-2 h-4 w-4" />
             <span>Profile</span>
           </DropdownMenuItem>
-          <DropdownMenuItem>
+          <DropdownMenuItem onClick={handleSettingsClick}>
             <Settings className="mr-2 h-4 w-4" />
             <span>Settings</span>
           </DropdownMenuItem>
@@ -119,7 +135,7 @@ const UserMenu = observer(() => {
         <DropdownMenuSeparator />
         
         {/* Logout */}
-        <DropdownMenuItem onClick={() => userStore.logout()}>
+        <DropdownMenuItem onClick={handleLogout}>
           <LogOut className="mr-2 h-4 w-4" />
           <span>Log out</span>
         </DropdownMenuItem>
@@ -129,6 +145,7 @@ const UserMenu = observer(() => {
 });
 
 export const Header = observer(() => {
+  const navigate = useNavigate();
   const { toggleSidebar } = useStore().uiStore;
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useStore().notificationStore;
   
@@ -155,6 +172,10 @@ export const Header = observer(() => {
         setLoading(false);
       }
     }
+  };
+
+  const handleViewAllNotifications = () => {
+    navigate('/notifications');
   };
 
   return (
@@ -231,7 +252,10 @@ export const Header = observer(() => {
             )}
             
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="justify-center text-sm cursor-pointer">
+            <DropdownMenuItem 
+              onClick={handleViewAllNotifications} 
+              className="justify-center text-sm cursor-pointer"
+            >
               View all notifications
             </DropdownMenuItem>
           </DropdownMenuContent>

@@ -16,6 +16,7 @@ import DataGridExample from "./pages/DataGridExample";
 import FormExamples from "./pages/FormExamples";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
+import Settings from "./pages/Settings";
 import { StoreProvider } from "./store/StoreContext";
 import "@fontsource/inter/400.css";
 import "@fontsource/inter/500.css";
@@ -52,6 +53,11 @@ const App = () => {
                   <Route path="/profile" element={
                     <ProtectedRoute>
                       <MainLayout><Profile /></MainLayout>
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/settings" element={
+                    <ProtectedRoute>
+                      <MainLayout><Settings /></MainLayout>
                     </ProtectedRoute>
                   } />
                   <Route path="/admin" element={
