@@ -1,12 +1,18 @@
 import React from 'react';
 import { observer } from 'mobx-react-lite';
 import { useStore } from '../store/StoreContext';
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent, CardFooter, CardDescription } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Switch } from '../components/ui/switch';
 import { Label } from '../components/ui/label';
 import { ThemeToggle } from '../components/theme/ThemeToggle';
-import { User, Bell, Lock, Shield, Smartphone } from 'lucide-react';
+import { 
+  User, Bell, Lock, Shield, Smartphone, Mail, Phone, LogOut, 
+  Save, ChevronRight, Monitor, Moon, Sun, Info, ExternalLink
+} from 'lucide-react';
+import { Separator } from '../components/ui/separator';
+import { Badge } from '../components/ui/badge';
+import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from '../components/ui/tooltip';
 
 export const Settings = observer(() => {
   const { userStore, notificationStore } = useStore();
@@ -14,7 +20,14 @@ export const Settings = observer(() => {
   
   // Make sure we have a user
   if (!currentUser) {
-    return <div>Loading settings...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+          <p className="text-muted-foreground">Loading your settings...</p>
+        </div>
+      </div>
+    );
   }
   
   const handleNotificationToggle = (key: 'email' | 'push' | 'sms') => {
@@ -25,126 +38,239 @@ export const Settings = observer(() => {
         [key]: !current[key]
       }
     });
+    
+    // Show notification for better UX
+    notificationStore.addNotification({
+      id: Date.now().toString(),
+      type: 'success',
+      title: 'Settings Updated',
+      message: `${key.charAt(0).toUpperCase() + key.slice(1)} notifications ${current[key] ? 'disabled' : 'enabled'}.`,
+      duration: 3000
+    });
   };
   
+  const SettingRow = ({ 
+    icon, 
+    label, 
+    children, 
+    description 
+  }: { 
+    icon: React.ReactNode, 
+    label: string, 
+    children: React.ReactNode,
+    description?: string
+  }) => (
+    <div className="flex flex-col space-y-2 py-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary">
+            {icon}
+          </div>
+          <div>
+            <Label className="text-base font-medium">{label}</Label>
+            {description && <p className="text-sm text-muted-foreground mt-0.5">{description}</p>}
+          </div>
+        </div>
+        <div>{children}</div>
+      </div>
+    </div>
+  );
+  
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Settings</h1>
-      
-      {/* Appearance Settings */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <User className="h-5 w-5 mr-2" />
-            Appearance
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label>Theme</Label>
-            <div className="flex items-center gap-4">
-              <ThemeToggle />
-              <span className="text-sm text-muted-foreground">Toggle between light and dark mode</span>
+    <TooltipProvider>
+      <div className="space-y-8">
+        <div className="flex flex-col space-y-2">
+          <h1 className="text-2xl font-bold tracking-tight">Account Settings</h1>
+          <p className="text-muted-foreground">
+            Manage your account settings and preferences
+          </p>
+        </div>
+        
+        {/* Appearance Settings */}
+        <Card className="overflow-hidden border-muted/30 shadow-sm">
+          <CardHeader className="bg-muted/20 pb-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-xl flex items-center">
+                  <Monitor className="h-5 w-5 mr-2 text-primary" />
+                  Appearance
+                </CardTitle>
+                <CardDescription>Customize how the application looks</CardDescription>
+              </div>
+              <Badge variant="outline" className="px-3 py-1">Visual</Badge>
             </div>
-          </div>
-        </CardContent>
-      </Card>
-      
-      {/* Notification Settings */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <Bell className="h-5 w-5 mr-2" />
-            Notifications
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Smartphone className="h-4 w-4" />
-              <Label htmlFor="push-notifications">Push Notifications</Label>
+          </CardHeader>
+          <CardContent className="p-6">
+            <SettingRow 
+              icon={<Moon className="h-4 w-4" />} 
+              label="Theme"
+              description="Choose between light, dark, or system theme"
+            >
+              <div className="flex items-center gap-4">
+                <ThemeToggle />
+              </div>
+            </SettingRow>
+            
+            <Separator className="my-3" />
+            
+            <SettingRow 
+              icon={<Monitor className="h-4 w-4" />} 
+              label="Density"
+              description="Adjust the compactness of the user interface"
+            >
+              <div className="flex space-x-2">
+                <Button variant="outline" size="sm" className="px-3 py-1 h-auto">Compact</Button>
+                <Button variant="outline" size="sm" className="px-3 py-1 h-auto bg-primary/10">Default</Button>
+                <Button variant="outline" size="sm" className="px-3 py-1 h-auto">Comfortable</Button>
+              </div>
+            </SettingRow>
+          </CardContent>
+        </Card>
+        
+        {/* Notification Settings */}
+        <Card className="overflow-hidden border-muted/30 shadow-sm">
+          <CardHeader className="bg-muted/20 pb-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-xl flex items-center">
+                  <Bell className="h-5 w-5 mr-2 text-primary" />
+                  Notifications
+                </CardTitle>
+                <CardDescription>Configure how you receive notifications</CardDescription>
+              </div>
+              <Badge variant="outline" className="px-3 py-1">Alerts</Badge>
             </div>
-            <Switch
-              id="push-notifications"
-              checked={currentUser.preferences?.notifications?.push || false}
-              onCheckedChange={() => handleNotificationToggle('push')}
-            />
-          </div>
-          
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="2" y="4" width="20" height="16" rx="2" />
-                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-              </svg>
-              <Label htmlFor="email-notifications">Email Notifications</Label>
+          </CardHeader>
+          <CardContent className="p-6 space-y-1">
+            <SettingRow 
+              icon={<Smartphone className="h-4 w-4" />} 
+              label="Push Notifications"
+              description="Receive alerts directly in your browser"
+            >
+              <Switch
+                id="push-notifications"
+                checked={currentUser.preferences?.notifications?.push || false}
+                onCheckedChange={() => handleNotificationToggle('push')}
+              />
+            </SettingRow>
+            
+            <Separator />
+            
+            <SettingRow 
+              icon={<Mail className="h-4 w-4" />} 
+              label="Email Notifications"
+              description="Get important updates via email"
+            >
+              <Switch
+                id="email-notifications"
+                checked={currentUser.preferences?.notifications?.email || false}
+                onCheckedChange={() => handleNotificationToggle('email')}
+              />
+            </SettingRow>
+            
+            <Separator />
+            
+            <SettingRow 
+              icon={<Phone className="h-4 w-4" />} 
+              label="SMS Notifications"
+              description="Receive text messages for critical alerts"
+            >
+              <div className="flex items-center">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="text-muted-foreground mr-2 cursor-help">
+                      <Info className="h-4 w-4" />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="max-w-xs">Standard SMS rates may apply based on your carrier</p>
+                  </TooltipContent>
+                </Tooltip>
+                <Switch
+                  id="sms-notifications"
+                  checked={currentUser.preferences?.notifications?.sms || false}
+                  onCheckedChange={() => handleNotificationToggle('sms')}
+                />
+              </div>
+            </SettingRow>
+          </CardContent>
+        </Card>
+        
+        {/* Security Settings */}
+        <Card className="overflow-hidden border-muted/30 shadow-sm">
+          <CardHeader className="bg-muted/20 pb-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-xl flex items-center">
+                  <Shield className="h-5 w-5 mr-2 text-primary" />
+                  Security
+                </CardTitle>
+                <CardDescription>Manage your account's security settings</CardDescription>
+              </div>
+              <Badge variant="outline" className="px-3 py-1 bg-orange-500/10 text-orange-600 border-orange-200">
+                Important
+              </Badge>
             </div>
-            <Switch
-              id="email-notifications"
-              checked={currentUser.preferences?.notifications?.email || false}
-              onCheckedChange={() => handleNotificationToggle('email')}
-            />
-          </div>
-          
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-              </svg>
-              <Label htmlFor="sms-notifications">SMS Notifications</Label>
-            </div>
-            <Switch
-              id="sms-notifications"
-              checked={currentUser.preferences?.notifications?.sms || false}
-              onCheckedChange={() => handleNotificationToggle('sms')}
-            />
-          </div>
-        </CardContent>
-      </Card>
-      
-      {/* Security Settings */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <Shield className="h-5 w-5 mr-2" />
-            Security
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label>Password</Label>
-            <div className="flex space-x-2">
-              <Button variant="outline" className="flex items-center">
-                <Lock className="h-4 w-4 mr-2" />
+          </CardHeader>
+          <CardContent className="p-6 space-y-1">
+            <SettingRow 
+              icon={<Lock className="h-4 w-4" />} 
+              label="Password"
+              description="Last changed 30 days ago"
+            >
+              <Button variant="outline" size="sm" className="h-9 px-4 flex items-center">
+                <Lock className="h-3.5 w-3.5 mr-2" />
                 Change Password
               </Button>
-            </div>
-          </div>
-          
-          <div className="space-y-2 pt-4">
-            <Label>Two-Factor Authentication</Label>
-            <div className="flex items-center justify-between">
-              <span className="text-sm">Enable 2FA for your account</span>
+            </SettingRow>
+            
+            <Separator />
+            
+            <SettingRow 
+              icon={<Shield className="h-4 w-4" />} 
+              label="Two-Factor Authentication"
+              description="Add an extra layer of security to your account"
+            >
               <Switch id="2fa" />
+            </SettingRow>
+            
+            <Separator />
+            
+            <div className="py-4">
+              <h3 className="text-sm font-medium mb-2 flex items-center">
+                <User className="h-4 w-4 mr-1.5 text-primary" />
+                Active Sessions
+              </h3>
+              <div className="bg-muted/20 p-4 rounded-md border border-muted mb-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-medium">Current Session</div>
+                    <div className="text-xs text-muted-foreground mt-1">Windows Chrome • Started {new Date().toLocaleString()}</div>
+                  </div>
+                  <Badge className="bg-green-500/15 text-green-600 hover:bg-green-500/20 border-green-200">
+                    Active
+                  </Badge>
+                </div>
+              </div>
+              <Button variant="outline" size="sm" className="w-full justify-center text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600">
+                <LogOut className="h-3.5 w-3.5 mr-2" />
+                Log Out All Other Devices
+              </Button>
             </div>
-          </div>
-          
-          <div className="space-y-2 pt-4">
-            <Label>Session Management</Label>
-            <div className="bg-accent/50 p-3 rounded-md">
-              <div className="text-sm">Current Session: <span className="font-semibold">This Device</span></div>
-              <div className="text-xs text-muted-foreground mt-1">Started: {new Date().toLocaleString()}</div>
+          </CardContent>
+          <CardFooter className="bg-muted/10 px-6 py-4 flex items-center justify-between">
+            <div className="text-sm text-muted-foreground">
+              <ExternalLink className="h-3.5 w-3.5 inline mr-1" />
+              View our <a href="#" className="underline">security policy</a>
             </div>
-            <Button variant="outline" size="sm" className="mt-2">
-              Log Out All Other Devices
+            <Button className="px-5" size="sm">
+              <Save className="h-3.5 w-3.5 mr-2" />
+              Save All Changes
             </Button>
-          </div>
-        </CardContent>
-        <CardFooter>
-          <Button>Save Security Settings</Button>
-        </CardFooter>
-      </Card>
-    </div>
+          </CardFooter>
+        </Card>
+      </div>
+    </TooltipProvider>
   );
 });
 

@@ -1,12 +1,17 @@
-
 import React, { useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import { useLocation } from 'react-router-dom';
-import { AlertCircle, Calendar, Check, CreditCard, Landmark } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { 
+  AlertCircle, Calendar, Check, CreditCard, Landmark, User as UserIcon, 
+  Mail, Phone, MessageSquare, ChevronRight, 
+  Info, Building
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from '../components/ui/tooltip';
 import { useStore } from '../store/StoreContext';
+import { Badge } from '../components/ui/badge';
+import { Separator } from '../components/ui/separator';
 
 export const FormExamples = observer(() => {
   const { notificationStore } = useStore();
@@ -221,136 +226,185 @@ export const FormExamples = observer(() => {
     }
   };
   
+  // Form input component for consistent styling
+  const FormInput = ({
+    label,
+    name,
+    type = 'text',
+    value,
+    onChange,
+    error,
+    required = false,
+    icon = null,
+    placeholder = '',
+    maxLength,
+    className = '',
+    description
+  }: {
+    label: string;
+    name: string;
+    type?: string;
+    value: string;
+    onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+    error?: string;
+    required?: boolean;
+    icon?: React.ReactNode;
+    placeholder?: string;
+    maxLength?: number;
+    className?: string;
+    description?: string;
+  }) => (
+    <div className={className}>
+      <div className="flex items-center justify-between mb-1.5">
+        <label htmlFor={name} className="text-sm font-medium">
+          {label} {required && <span className="text-destructive">*</span>}
+        </label>
+        {description && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="cursor-help text-muted-foreground">
+                <Info className="h-4 w-4" />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-xs">
+              {description}
+            </TooltipContent>
+          </Tooltip>
+        )}
+      </div>
+      <div className="relative">
+        {icon && (
+          <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
+            {icon}
+          </div>
+        )}
+        {type === 'textarea' ? (
+          <textarea
+            id={name}
+            name={name}
+            value={value}
+            onChange={onChange}
+            className={`w-full ${icon ? 'pl-10' : 'px-4'} py-2.5 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all
+                       ${error ? 'border-destructive' : 'border-input'}`}
+            placeholder={placeholder}
+            rows={4}
+            aria-invalid={error ? 'true' : 'false'}
+            aria-describedby={error ? `${name}-error` : undefined}
+          ></textarea>
+        ) : (
+          <input
+            id={name}
+            name={name}
+            type={type}
+            value={value}
+            onChange={onChange}
+            className={`w-full ${icon ? 'pl-10' : 'px-4'} py-2.5 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all
+                       ${error ? 'border-destructive' : 'border-input'}`}
+            placeholder={placeholder}
+            maxLength={maxLength}
+            aria-invalid={error ? 'true' : 'false'}
+            aria-describedby={error ? `${name}-error` : undefined}
+          />
+        )}
+      </div>
+      {error && (
+        <div id={`${name}-error`} className="text-destructive text-sm mt-1.5 flex items-center gap-1.5">
+          <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
+    </div>
+  );
+  
   return (
     <TooltipProvider>
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h1>{isAdvancedForm ? 'Advanced Form Example' : 'Form Examples'}</h1>
+      <div className="space-y-8">
+        <div className="flex flex-col space-y-2">
+          <h1 className="text-2xl font-bold tracking-tight">{isAdvancedForm ? 'Advanced Form Example' : 'Form Examples'}</h1>
+          <p className="text-muted-foreground">
+            {isAdvancedForm ? 'Complete financial account setup with validation' : 'Examples of forms with different complexity levels'}
+          </p>
         </div>
         
         {!isAdvancedForm && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Basic Contact Form</CardTitle>
+          <Card className="overflow-hidden border-muted/30 shadow-sm">
+            <CardHeader className="bg-muted/20 pb-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-xl">Contact Information</CardTitle>
+                  <CardDescription>Please provide your contact details</CardDescription>
+                </div>
+                <Badge variant="outline" className="px-3 py-1">
+                  Basic Form
+                </Badge>
+              </div>
             </CardHeader>
-            <CardContent>
-              <form onSubmit={handleBasicFormSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="firstName" className="block text-sm font-medium mb-1">
-                      First Name <span className="text-destructive">*</span>
-                    </label>
-                    <input
-                      id="firstName"
-                      name="firstName"
-                      type="text"
-                      value={basicForm.firstName}
-                      onChange={handleBasicFormChange}
-                      className={`w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary
-                                 ${basicFormErrors.firstName ? 'border-destructive' : 'border-input'}`}
-                      aria-invalid={basicFormErrors.firstName ? 'true' : 'false'}
-                      aria-describedby={basicFormErrors.firstName ? 'firstName-error' : undefined}
-                    />
-                    {basicFormErrors.firstName && (
-                      <div id="firstName-error" className="text-destructive text-sm mt-1 flex items-center gap-1">
-                        <AlertCircle className="h-4 w-4" />
-                        {basicFormErrors.firstName}
-                      </div>
-                    )}
-                  </div>
+            <CardContent className="p-6">
+              <form onSubmit={handleBasicFormSubmit} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FormInput
+                    label="First Name"
+                    name="firstName"
+                    value={basicForm.firstName}
+                    onChange={handleBasicFormChange}
+                    error={basicFormErrors.firstName}
+                    required
+                    icon={<UserIcon className="h-4 w-4" />}
+                  />
                   
-                  <div>
-                    <label htmlFor="lastName" className="block text-sm font-medium mb-1">
-                      Last Name <span className="text-destructive">*</span>
-                    </label>
-                    <input
-                      id="lastName"
-                      name="lastName"
-                      type="text"
-                      value={basicForm.lastName}
-                      onChange={handleBasicFormChange}
-                      className={`w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary
-                                 ${basicFormErrors.lastName ? 'border-destructive' : 'border-input'}`}
-                      aria-invalid={basicFormErrors.lastName ? 'true' : 'false'}
-                      aria-describedby={basicFormErrors.lastName ? 'lastName-error' : undefined}
-                    />
-                    {basicFormErrors.lastName && (
-                      <div id="lastName-error" className="text-destructive text-sm mt-1 flex items-center gap-1">
-                        <AlertCircle className="h-4 w-4" />
-                        {basicFormErrors.lastName}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium mb-1">
-                    Email <span className="text-destructive">*</span>
-                  </label>
-                  <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    value={basicForm.email}
+                  <FormInput
+                    label="Last Name"
+                    name="lastName"
+                    value={basicForm.lastName}
                     onChange={handleBasicFormChange}
-                    className={`w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary
-                               ${basicFormErrors.email ? 'border-destructive' : 'border-input'}`}
-                    aria-invalid={basicFormErrors.email ? 'true' : 'false'}
-                    aria-describedby={basicFormErrors.email ? 'email-error' : undefined}
+                    error={basicFormErrors.lastName}
+                    required
+                    icon={<UserIcon className="h-4 w-4" />}
                   />
-                  {basicFormErrors.email && (
-                    <div id="email-error" className="text-destructive text-sm mt-1 flex items-center gap-1">
-                      <AlertCircle className="h-4 w-4" />
-                      {basicFormErrors.email}
-                    </div>
-                  )}
                 </div>
                 
-                <div>
-                  <label htmlFor="phone" className="block text-sm font-medium mb-1">
-                    Phone Number
-                  </label>
-                  <input
-                    id="phone"
-                    name="phone"
-                    type="tel"
-                    value={basicForm.phone}
-                    onChange={handleBasicFormChange}
-                    className={`w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary
-                               ${basicFormErrors.phone ? 'border-destructive' : 'border-input'}`}
-                    aria-invalid={basicFormErrors.phone ? 'true' : 'false'}
-                    aria-describedby={basicFormErrors.phone ? 'phone-error' : undefined}
-                    placeholder="(123) 456-7890"
-                  />
-                  {basicFormErrors.phone && (
-                    <div id="phone-error" className="text-destructive text-sm mt-1 flex items-center gap-1">
-                      <AlertCircle className="h-4 w-4" />
-                      {basicFormErrors.phone}
-                    </div>
-                  )}
-                </div>
+                <FormInput
+                  label="Email Address"
+                  name="email"
+                  type="email"
+                  value={basicForm.email}
+                  onChange={handleBasicFormChange}
+                  error={basicFormErrors.email}
+                  required
+                  icon={<Mail className="h-4 w-4" />}
+                  placeholder="you@example.com"
+                />
                 
-                <div>
-                  <label htmlFor="message" className="block text-sm font-medium mb-1">
-                    Message
-                  </label>
-                  <textarea
-                    id="message"
-                    name="message"
-                    rows={4}
-                    value={basicForm.message}
-                    onChange={handleBasicFormChange}
-                    className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary"
-                    placeholder="How can we help you?"
-                  ></textarea>
-                </div>
+                <FormInput
+                  label="Phone Number"
+                  name="phone"
+                  type="tel"
+                  value={basicForm.phone}
+                  onChange={handleBasicFormChange}
+                  error={basicFormErrors.phone}
+                  icon={<Phone className="h-4 w-4" />}
+                  placeholder="(123) 456-7890"
+                  description="Used only for important notifications"
+                />
                 
-                <div className="flex justify-end">
+                <FormInput
+                  label="Message"
+                  name="message"
+                  type="textarea"
+                  value={basicForm.message}
+                  onChange={handleBasicFormChange}
+                  icon={<MessageSquare className="h-4 w-4" />}
+                  placeholder="How can we help you?"
+                />
+                
+                <div className="flex justify-end pt-2">
                   <Button 
                     type="submit"
-                    tooltip="Submit the contact form"
+                    size="lg"
+                    className="px-6"
                   >
-                    Submit
+                    Submit Request
+                    <ChevronRight className="ml-2 h-4 w-4" />
                   </Button>
                 </div>
               </form>
@@ -359,14 +413,22 @@ export const FormExamples = observer(() => {
         )}
         
         {(isAdvancedForm || !isAdvancedForm) && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Bank Account Information</CardTitle>
+          <Card className="overflow-hidden border-muted/30 shadow-sm">
+            <CardHeader className="bg-muted/20 pb-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-xl">Bank Account Information</CardTitle>
+                  <CardDescription>Add a bank account for payments and transfers</CardDescription>
+                </div>
+                <Badge variant="outline" className="px-3 py-1">
+                  {isAdvancedForm ? 'Advanced Form' : 'Financial Form'}
+                </Badge>
+              </div>
             </CardHeader>
-            <CardContent>
-              <form onSubmit={handleAccountFormSubmit} className="space-y-4">
-                <div className="mb-6">
-                  <div className="text-sm font-medium mb-3">Account Type</div>
+            <CardContent className="p-6">
+              <form onSubmit={handleAccountFormSubmit} className="space-y-6">
+                <div className="bg-muted/10 rounded-lg p-4 border border-muted mb-2">
+                  <div className="text-sm font-medium mb-3">Select Account Type</div>
                   <div className="flex space-x-4">
                     <label className="flex items-center space-x-2 cursor-pointer">
                       <input
@@ -377,7 +439,7 @@ export const FormExamples = observer(() => {
                         onChange={handleAccountFormChange}
                         className="h-4 w-4 border-input border text-primary focus:ring-primary"
                       />
-                      <span>Personal</span>
+                      <span>Personal Account</span>
                     </label>
                     
                     <label className="flex items-center space-x-2 cursor-pointer">
@@ -389,242 +451,142 @@ export const FormExamples = observer(() => {
                         onChange={handleAccountFormChange}
                         className="h-4 w-4 border-input border text-primary focus:ring-primary"
                       />
-                      <span>Business</span>
+                      <span>Business Account</span>
                     </label>
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="accountName" className="block text-sm font-medium mb-1">
-                      Account Name <span className="text-destructive">*</span>
-                    </label>
-                    <input
-                      id="accountName"
-                      name="accountName"
-                      type="text"
-                      value={accountForm.accountName}
-                      onChange={handleAccountFormChange}
-                      className={`w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary
-                                 ${accountFormErrors.accountName ? 'border-destructive' : 'border-input'}`}
-                      aria-invalid={accountFormErrors.accountName ? 'true' : 'false'}
-                    />
-                    {accountFormErrors.accountName && (
-                      <div className="text-destructive text-sm mt-1 flex items-center gap-1">
-                        <AlertCircle className="h-4 w-4" />
-                        {accountFormErrors.accountName}
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div>
-                    <label htmlFor="bankName" className="block text-sm font-medium mb-1">
-                      Bank Name <span className="text-destructive">*</span>
-                    </label>
-                    <div className="relative">
-                      <Landmark className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <input
-                        id="bankName"
-                        name="bankName"
-                        type="text"
-                        value={accountForm.bankName}
-                        onChange={handleAccountFormChange}
-                        className={`w-full pl-10 pr-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary
-                                   ${accountFormErrors.bankName ? 'border-destructive' : 'border-input'}`}
-                        aria-invalid={accountFormErrors.bankName ? 'true' : 'false'}
-                      />
-                    </div>
-                    {accountFormErrors.bankName && (
-                      <div className="text-destructive text-sm mt-1 flex items-center gap-1">
-                        <AlertCircle className="h-4 w-4" />
-                        {accountFormErrors.bankName}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="accountNumber" className="block text-sm font-medium mb-1">
-                      Account Number <span className="text-destructive">*</span>
-                    </label>
-                    <div className="relative">
-                      <CreditCard className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <input
-                        id="accountNumber"
-                        name="accountNumber"
-                        type="text"
-                        value={accountForm.accountNumber}
-                        onChange={handleAccountFormChange}
-                        className={`w-full pl-10 pr-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary
-                                   ${accountFormErrors.accountNumber ? 'border-destructive' : 'border-input'}`}
-                        aria-invalid={accountFormErrors.accountNumber ? 'true' : 'false'}
-                        maxLength={17}
-                      />
-                    </div>
-                    {accountFormErrors.accountNumber && (
-                      <div className="text-destructive text-sm mt-1 flex items-center gap-1">
-                        <AlertCircle className="h-4 w-4" />
-                        {accountFormErrors.accountNumber}
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div>
-                    <label htmlFor="routingNumber" className="block text-sm font-medium mb-1">
-                      Routing Number <span className="text-destructive">*</span>
-                    </label>
-                    <input
-                      id="routingNumber"
-                      name="routingNumber"
-                      type="text"
-                      value={accountForm.routingNumber}
-                      onChange={handleAccountFormChange}
-                      className={`w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary
-                                 ${accountFormErrors.routingNumber ? 'border-destructive' : 'border-input'}`}
-                      aria-invalid={accountFormErrors.routingNumber ? 'true' : 'false'}
-                      maxLength={9}
-                    />
-                    {accountFormErrors.routingNumber && (
-                      <div className="text-destructive text-sm mt-1 flex items-center gap-1">
-                        <AlertCircle className="h-4 w-4" />
-                        {accountFormErrors.routingNumber}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                
-                <div>
-                  <label htmlFor="branch" className="block text-sm font-medium mb-1">
-                    Branch
-                  </label>
-                  <input
-                    id="branch"
-                    name="branch"
-                    type="text"
-                    value={accountForm.branch}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FormInput
+                    label="Account Name"
+                    name="accountName"
+                    value={accountForm.accountName}
                     onChange={handleAccountFormChange}
-                    className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                    error={accountFormErrors.accountName}
+                    required
+                    placeholder={accountForm.accountType === 'personal' ? "John Doe" : "ABC Company, Inc."}
+                    description="Name as it appears on your account"
+                  />
+                  
+                  <FormInput
+                    label="Bank Name"
+                    name="bankName"
+                    value={accountForm.bankName}
+                    onChange={handleAccountFormChange}
+                    error={accountFormErrors.bankName}
+                    required
+                    icon={<Landmark className="h-4 w-4" />}
+                    placeholder="Enter bank name"
                   />
                 </div>
                 
-                <div className="border border-input rounded-md p-4">
-                  <h3 className="font-medium mb-3">Bank Address</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FormInput
+                    label="Account Number"
+                    name="accountNumber"
+                    value={accountForm.accountNumber}
+                    onChange={handleAccountFormChange}
+                    error={accountFormErrors.accountNumber}
+                    required
+                    icon={<CreditCard className="h-4 w-4" />}
+                    maxLength={17}
+                    description="Your bank account number (8-17 digits)"
+                  />
                   
-                  <div className="space-y-3">
-                    <div>
-                      <label htmlFor="address.street" className="block text-sm font-medium mb-1">
-                        Street Address <span className="text-destructive">*</span>
-                      </label>
-                      <input
-                        id="address.street"
-                        name="address.street"
-                        type="text"
-                        value={accountForm.address.street}
-                        onChange={handleAccountFormChange}
-                        className={`w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary
-                                   ${accountFormErrors['address.street'] ? 'border-destructive' : 'border-input'}`}
-                        aria-invalid={accountFormErrors['address.street'] ? 'true' : 'false'}
-                      />
-                      {accountFormErrors['address.street'] && (
-                        <div className="text-destructive text-sm mt-1 flex items-center gap-1">
-                          <AlertCircle className="h-4 w-4" />
-                          {accountFormErrors['address.street']}
-                        </div>
-                      )}
-                    </div>
+                  <FormInput
+                    label="Routing Number"
+                    name="routingNumber"
+                    value={accountForm.routingNumber}
+                    onChange={handleAccountFormChange}
+                    error={accountFormErrors.routingNumber}
+                    required
+                    maxLength={9}
+                    description="9-digit routing number for your bank"
+                  />
+                </div>
+                
+                <FormInput
+                  label="Branch Name"
+                  name="branch"
+                  value={accountForm.branch}
+                  onChange={handleAccountFormChange}
+                  icon={<Building className="h-4 w-4" />}
+                  placeholder="Main Branch"
+                />
+                
+                <div className="mt-2">
+                  <Separator className="my-6" />
+                  <div className="flex items-center mb-4">
+                    <h3 className="font-medium">Bank Address Information</h3>
+                    <div className="ml-2 text-xs px-2 py-0.5 bg-muted rounded-full text-muted-foreground">Required</div>
+                  </div>
+                  
+                  <div className="space-y-6">
+                    <FormInput
+                      label="Street Address"
+                      name="address.street"
+                      value={accountForm.address.street}
+                      onChange={handleAccountFormChange}
+                      error={accountFormErrors['address.street']}
+                      required
+                      placeholder="123 Main St"
+                    />
                     
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                      <div>
-                        <label htmlFor="address.city" className="block text-sm font-medium mb-1">
-                          City <span className="text-destructive">*</span>
-                        </label>
-                        <input
-                          id="address.city"
-                          name="address.city"
-                          type="text"
-                          value={accountForm.address.city}
-                          onChange={handleAccountFormChange}
-                          className={`w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary
-                                     ${accountFormErrors['address.city'] ? 'border-destructive' : 'border-input'}`}
-                          aria-invalid={accountFormErrors['address.city'] ? 'true' : 'false'}
-                        />
-                        {accountFormErrors['address.city'] && (
-                          <div className="text-destructive text-sm mt-1 flex items-center gap-1">
-                            <AlertCircle className="h-4 w-4" />
-                            {accountFormErrors['address.city']}
-                          </div>
-                        )}
-                      </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <FormInput
+                        label="City"
+                        name="address.city"
+                        value={accountForm.address.city}
+                        onChange={handleAccountFormChange}
+                        error={accountFormErrors['address.city']}
+                        required
+                      />
                       
-                      <div>
-                        <label htmlFor="address.state" className="block text-sm font-medium mb-1">
-                          State <span className="text-destructive">*</span>
-                        </label>
-                        <input
-                          id="address.state"
-                          name="address.state"
-                          type="text"
-                          value={accountForm.address.state}
-                          onChange={handleAccountFormChange}
-                          className={`w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary
-                                     ${accountFormErrors['address.state'] ? 'border-destructive' : 'border-input'}`}
-                          aria-invalid={accountFormErrors['address.state'] ? 'true' : 'false'}
-                        />
-                        {accountFormErrors['address.state'] && (
-                          <div className="text-destructive text-sm mt-1 flex items-center gap-1">
-                            <AlertCircle className="h-4 w-4" />
-                            {accountFormErrors['address.state']}
-                          </div>
-                        )}
-                      </div>
+                      <FormInput
+                        label="State"
+                        name="address.state"
+                        value={accountForm.address.state}
+                        onChange={handleAccountFormChange}
+                        error={accountFormErrors['address.state']}
+                        required
+                      />
                       
-                      <div>
-                        <label htmlFor="address.zip" className="block text-sm font-medium mb-1">
-                          ZIP Code <span className="text-destructive">*</span>
-                        </label>
-                        <input
-                          id="address.zip"
-                          name="address.zip"
-                          type="text"
-                          value={accountForm.address.zip}
-                          onChange={handleAccountFormChange}
-                          className={`w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary
-                                     ${accountFormErrors['address.zip'] ? 'border-destructive' : 'border-input'}`}
-                          aria-invalid={accountFormErrors['address.zip'] ? 'true' : 'false'}
-                          maxLength={10}
-                        />
-                        {accountFormErrors['address.zip'] && (
-                          <div className="text-destructive text-sm mt-1 flex items-center gap-1">
-                            <AlertCircle className="h-4 w-4" />
-                            {accountFormErrors['address.zip']}
-                          </div>
-                        )}
-                      </div>
+                      <FormInput
+                        label="ZIP Code"
+                        name="address.zip"
+                        value={accountForm.address.zip}
+                        onChange={handleAccountFormChange}
+                        error={accountFormErrors['address.zip']}
+                        required
+                        maxLength={10}
+                        placeholder="12345"
+                      />
                     </div>
                   </div>
                 </div>
                 
-                <div className="flex items-center">
+                <div className="flex items-center pt-2 mt-4 bg-muted/10 p-3 rounded-md">
                   <input
                     id="isDefault"
                     name="isDefault"
                     type="checkbox"
                     checked={accountForm.isDefault}
                     onChange={handleAccountFormChange}
-                    className="h-4 w-4 border-input text-primary focus:ring-primary rounded"
+                    className="h-5 w-5 border-input text-primary focus:ring-primary rounded"
                   />
                   <label htmlFor="isDefault" className="ml-2 text-sm font-medium">
                     Set as default payment method
                   </label>
                 </div>
                 
-                <div className="flex justify-end">
+                <div className="flex justify-end pt-4">
                   <Button
                     type="submit"
-                    tooltip="Add this bank account to your payment methods"
+                    size="lg"
+                    className="px-6"
                   >
                     Add Bank Account
+                    <ChevronRight className="ml-2 h-4 w-4" />
                   </Button>
                 </div>
               </form>
@@ -635,20 +597,5 @@ export const FormExamples = observer(() => {
     </TooltipProvider>
   );
 });
-
-// Simple icon components to avoid importing large libraries
-const User: React.FC<any> = (props) => (
-  <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" {...props}>
-    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-    <circle cx="12" cy="7" r="4"></circle>
-  </svg>
-);
-
-const Briefcase: React.FC<any> = (props) => (
-  <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" {...props}>
-    <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
-    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
-  </svg>
-);
 
 export default FormExamples;
