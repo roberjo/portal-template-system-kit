@@ -1,84 +1,97 @@
-
 import React from 'react';
 import { observer } from 'mobx-react-lite';
 import { X } from 'lucide-react';
 import rootStore from '../../store/RootStore';
+import { Button } from '../ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
+
+const getSizeClass = () => {
+  const { modalOptions } = rootStore.uiStore;
+  
+  switch (modalOptions.size) {
+    case 'sm':
+      return 'max-w-sm';
+    case 'lg':
+      return 'max-w-3xl';
+    case 'md':
+    default:
+      return 'max-w-lg';
+  }
+};
 
 export const ModalContainer = observer(() => {
   const { modalOpen, modalOptions, closeModal } = rootStore.uiStore;
   
-  if (!modalOpen || !modalOptions) return null;
-  
-  const handleBackdropClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) closeModal();
-  };
-  
-  const getSizeClass = () => {
-    switch (modalOptions.size) {
-      case 'sm': return 'max-w-sm';
-      case 'lg': return 'max-w-2xl';
-      case 'xl': return 'max-w-4xl';
-      case 'full': return 'max-w-full m-4';
-      default: return 'max-w-lg';
-    }
-  };
+  if (!modalOpen) {
+    return null;
+  }
   
   return (
-    <div 
-      className={`fixed inset-0 z-50 bg-black/50 flex items-center justify-center transition-opacity duration-300
-                  ${modalOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-      onClick={handleBackdropClick}
-    >
+    <TooltipProvider>
       <div 
-        className={`bg-card rounded-lg shadow-lg w-full ${getSizeClass()} transform transition-all duration-300
-                    ${modalOpen ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="modal-title"
+        className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4"
+        onClick={(e) => modalOptions.closeOnOverlayClick !== false && closeModal()}
       >
-        <div className="flex items-center justify-between border-b border-border p-4">
-          <h2 id="modal-title" className="text-xl font-semibold">{modalOptions.title}</h2>
-          <button 
-            onClick={closeModal} 
-            className="p-1 rounded-md hover:bg-accent transition-colors"
-            aria-label="Close modal"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-        
-        <div className="p-4 overflow-y-auto max-h-[calc(100vh-200px)]">
-          {modalOptions.content}
-        </div>
-        
-        {(modalOptions.onConfirm || modalOptions.onCancel) && (
-          <div className="flex justify-end gap-2 border-t border-border p-4">
-            {modalOptions.onCancel && (
-              <button
-                onClick={() => {
-                  modalOptions.onCancel?.();
-                  closeModal();
-                }}
-                className="px-4 py-2 bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/90 transition-colors"
-              >
-                {modalOptions.cancelText || 'Cancel'}
-              </button>
-            )}
-            
-            {modalOptions.onConfirm && (
-              <button
-                onClick={() => {
-                  modalOptions.onConfirm?.();
-                  closeModal();
-                }}
-                className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
-              >
-                {modalOptions.confirmText || 'Confirm'}
-              </button>
-            )}
+        <div 
+          className={`bg-card rounded-lg shadow-lg w-full ${getSizeClass()} transform transition-all duration-300
+                      ${modalOpen ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modal-title"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-center justify-between border-b border-border p-4">
+            <h2 id="modal-title" className="text-xl font-semibold">{modalOptions.title}</h2>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button 
+                  onClick={closeModal} 
+                  className="p-1 rounded-md hover:bg-accent transition-colors"
+                  aria-label="Close modal"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Close dialog</p>
+              </TooltipContent>
+            </Tooltip>
           </div>
-        )}
+          
+          <div className="p-4 overflow-y-auto max-h-[calc(100vh-200px)]">
+            {modalOptions.content}
+          </div>
+          
+          {(modalOptions.onConfirm || modalOptions.onCancel) && (
+            <div className="flex justify-end gap-2 border-t border-border p-4">
+              {modalOptions.onCancel && (
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    modalOptions.onCancel?.();
+                    closeModal();
+                  }}
+                  tooltip="Cancel this action"
+                >
+                  {modalOptions.cancelText || 'Cancel'}
+                </Button>
+              )}
+              
+              {modalOptions.onConfirm && (
+                <Button
+                  onClick={() => {
+                    modalOptions.onConfirm?.();
+                    closeModal();
+                  }}
+                  tooltip="Confirm this action"
+                >
+                  {modalOptions.confirmText || 'Confirm'}
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </TooltipProvider>
   );
 });

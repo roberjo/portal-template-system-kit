@@ -1,9 +1,9 @@
-
 import React, { useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
 import { CheckCircle, AlertCircle, Info, AlertTriangle, X } from 'lucide-react';
 import rootStore from '../../store/RootStore';
 import { Notification } from '../../store/NotificationStore';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
 const ToastItem: React.FC<{ notification: Notification }> = ({ notification }) => {
   const { dismissToast } = rootStore.notificationStore;
@@ -69,13 +69,20 @@ const ToastItem: React.FC<{ notification: Notification }> = ({ notification }) =
           </div>
         </div>
         
-        <button
-          onClick={handleDismiss}
-          className="flex-shrink-0 ml-4 text-muted-foreground hover:text-foreground transition-colors"
-          aria-label="Dismiss"
-        >
-          <X className="h-4 w-4" />
-        </button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={handleDismiss}
+              className="flex-shrink-0 ml-4 text-muted-foreground hover:text-foreground transition-colors"
+              aria-label="Dismiss"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Dismiss notification</p>
+          </TooltipContent>
+        </Tooltip>
       </div>
     </div>
   );
@@ -85,12 +92,14 @@ export const ToastContainer = observer(() => {
   const { toasts } = rootStore.notificationStore;
   
   return (
-    <div className="fixed z-50 top-4 right-4 flex flex-col items-end space-y-2 pointer-events-none">
-      {toasts.map(toast => (
-        <div key={toast.id} className="pointer-events-auto">
-          <ToastItem notification={toast} />
-        </div>
-      ))}
-    </div>
+    <TooltipProvider>
+      <div className="fixed z-50 top-4 right-4 flex flex-col items-end space-y-2 pointer-events-none">
+        {toasts.map(toast => (
+          <div key={toast.id} className="pointer-events-auto">
+            <ToastItem notification={toast} />
+          </div>
+        ))}
+      </div>
+    </TooltipProvider>
   );
 });
