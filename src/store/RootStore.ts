@@ -1,21 +1,21 @@
-
 import { makeAutoObservable } from 'mobx';
+import { IRootStore } from './types';
 import { UIStore } from './UIStore';
 import { UserStore } from './UserStore';
 import { NotificationStore } from './NotificationStore';
 import { DataStore } from './DataStore';
 
-export class RootStore {
+export class RootStore implements IRootStore {
   uiStore: UIStore;
   userStore: UserStore;
   notificationStore: NotificationStore;
   dataStore: DataStore;
 
   constructor() {
-    this.uiStore = new UIStore(this);
-    this.userStore = new UserStore(this);
-    this.notificationStore = new NotificationStore(this);
-    this.dataStore = new DataStore(this);
+    this.uiStore = new UIStore();
+    this.userStore = new UserStore();
+    this.notificationStore = new NotificationStore();
+    this.dataStore = new DataStore();
     
     makeAutoObservable(this);
   }

@@ -1,25 +1,7 @@
-
 import { makeAutoObservable } from 'mobx';
-import { RootStore } from './RootStore';
+import { INotificationStore, Notification } from './types';
 
-export interface Notification {
-  id: string;
-  type: 'success' | 'error' | 'warning' | 'info';
-  title: string;
-  message: string;
-  read?: boolean;
-  timestamp?: number;
-  duration?: number;
-  persistent?: boolean;
-  action?: {
-    label: string;
-    onClick: () => void;
-  };
-}
-
-export class NotificationStore {
-  rootStore: RootStore;
-  
+export class NotificationStore implements INotificationStore {
   // All notifications (for history/notification center)
   notifications: Notification[] = [];
   
@@ -29,8 +11,8 @@ export class NotificationStore {
   // Unread count
   unreadCount: number = 0;
   
-  constructor(rootStore: RootStore) {
-    this.rootStore = rootStore;
+  constructor() {
+    makeAutoObservable(this);
     
     // Mock notifications for demo
     this.notifications = [
@@ -53,39 +35,43 @@ export class NotificationStore {
     ];
     
     this.calculateUnread();
-    
-    makeAutoObservable(this, { rootStore: false });
   }
   
-  addNotification = (notification: Omit<Notification, 'timestamp'>) => {
-    const newNotification = {
+  private calculateUnread = () => {
+    this.unreadCount = this.notifications.filter(n => !n.read).length;
+  }
+  
+  addNotification = (notification: Omit<Notification, 'timestamp' | 'read'> & { timestamp?: number; read?: boolean }) => {
+    const newNotification: Notification = {
       ...notification,
-      timestamp: Date.now(),
-      read: false
+      timestamp: notification.timestamp || Date.now(),
+      read: notification.read || false
     };
     
-    this.notifications.unshift(newNotification);
+    // Add to notifications list
+    this.notifications = [newNotification, ...this.notifications];
     
-    // Add to toast queue if not persistent
-    if (!notification.persistent) {
-      this.toasts.push(newNotification);
-      
-      // Auto dismiss after duration
-      if (notification.duration !== undefined) {
-        setTimeout(() => {
-          this.dismissToast(newNotification.id);
-        }, notification.duration);
-      }
+    // If not marked as read, increase unread count
+    if (!newNotification.read) {
+      this.unreadCount++;
     }
     
-    this.calculateUnread();
+    // If it has a duration, add it to toasts for temporary display
+    if (newNotification.duration) {
+      this.toasts = [newNotification, ...this.toasts];
+      
+      // Automatically remove from toasts after duration
+      setTimeout(() => {
+        this.toasts = this.toasts.filter(t => t.id !== newNotification.id);
+      }, newNotification.duration);
+    }
   }
   
   markAsRead = (id: string) => {
     const notification = this.notifications.find(n => n.id === id);
-    if (notification) {
+    if (notification && !notification.read) {
       notification.read = true;
-      this.calculateUnread();
+      this.unreadCount--;
     }
   }
   
@@ -93,18 +79,27 @@ export class NotificationStore {
     this.notifications.forEach(n => {
       n.read = true;
     });
-    this.calculateUnread();
+    this.unreadCount = 0;
   }
   
-  dismissToast = (id: string) => {
+  removeNotification = (id: string) => {
+    const notification = this.notifications.find(n => n.id === id);
+    
+    // If it's unread, decrease unread count
+    if (notification && !notification.read) {
+      this.unreadCount--;
+    }
+    
+    // Remove from notifications
+    this.notifications = this.notifications.filter(n => n.id !== id);
+    
+    // Remove from toasts if present
     this.toasts = this.toasts.filter(t => t.id !== id);
   }
   
-  clearAllToasts = () => {
+  clearAll = () => {
+    this.notifications = [];
     this.toasts = [];
-  }
-  
-  private calculateUnread = () => {
-    this.unreadCount = this.notifications.filter(n => !n.read).length;
+    this.unreadCount = 0;
   }
 }

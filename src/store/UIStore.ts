@@ -1,20 +1,7 @@
 import { makeAutoObservable } from 'mobx';
-import { RootStore } from './RootStore';
-import { useTheme } from 'next-themes';
+import { IUIStore, ModalOptions } from './types';
 
-export interface ModalOptions {
-  title: string;
-  content: React.ReactNode;
-  onConfirm?: () => void;
-  onCancel?: () => void;
-  confirmText?: string;
-  cancelText?: string;
-  size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
-}
-
-export class UIStore {
-  rootStore: RootStore;
-  
+export class UIStore implements IUIStore {
   // Sidebar
   sidebarCollapsed: boolean = false;
   
@@ -22,9 +9,8 @@ export class UIStore {
   modalOpen: boolean = false;
   modalOptions: ModalOptions | null = null;
   
-  constructor(rootStore: RootStore) {
-    this.rootStore = rootStore;
-    makeAutoObservable(this, { rootStore: false });
+  constructor() {
+    makeAutoObservable(this);
   }
   
   toggleSidebar = () => {
