@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { MainLayout } from "./components/layout/MainLayout";
 import { ThemeProvider } from "./components/providers/ThemeProvider";
 import { ErrorBoundary } from "./components/providers/ErrorBoundary";
+import { ProtectedRoute } from "./components/providers/ProtectedRoute";
 import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
 import AdminPanel from "./pages/AdminPanel";
@@ -13,6 +14,7 @@ import NotificationsPage from "./pages/NotificationsPage";
 import DataGridExample from "./pages/DataGridExample";
 import FormExamples from "./pages/FormExamples";
 import NotFound from "./pages/NotFound";
+import Login from "./pages/Login";
 import { StoreProvider } from "./store/StoreContext";
 import "@fontsource/inter/400.css";
 import "@fontsource/inter/500.css";
@@ -39,15 +41,52 @@ const App = () => {
               <Sonner />
               <BrowserRouter>
                 <Routes>
-                  <Route path="/" element={<MainLayout><Dashboard /></MainLayout>} />
-                  <Route path="/profile" element={<MainLayout><Profile /></MainLayout>} />
-                  <Route path="/admin" element={<MainLayout><AdminPanel /></MainLayout>} />
-                  <Route path="/notifications" element={<MainLayout><NotificationsPage /></MainLayout>} />
-                  <Route path="/data" element={<MainLayout><DataGridExample /></MainLayout>} />
-                  <Route path="/forms" element={<MainLayout><Navigate to="/forms/basic" replace /></MainLayout>} />
-                  <Route path="/forms/basic" element={<MainLayout><FormExamples /></MainLayout>} />
-                  <Route path="/forms/advanced" element={<MainLayout><FormExamples /></MainLayout>} />
-                  <Route path="*" element={<MainLayout><NotFound /></MainLayout>} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/" element={
+                    <ProtectedRoute>
+                      <MainLayout><Dashboard /></MainLayout>
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/profile" element={
+                    <ProtectedRoute>
+                      <MainLayout><Profile /></MainLayout>
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/admin" element={
+                    <ProtectedRoute>
+                      <MainLayout><AdminPanel /></MainLayout>
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/notifications" element={
+                    <ProtectedRoute>
+                      <MainLayout><NotificationsPage /></MainLayout>
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/data" element={
+                    <ProtectedRoute>
+                      <MainLayout><DataGridExample /></MainLayout>
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/forms" element={
+                    <ProtectedRoute>
+                      <MainLayout><Navigate to="/forms/basic" replace /></MainLayout>
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/forms/basic" element={
+                    <ProtectedRoute>
+                      <MainLayout><FormExamples /></MainLayout>
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/forms/advanced" element={
+                    <ProtectedRoute>
+                      <MainLayout><FormExamples /></MainLayout>
+                    </ProtectedRoute>
+                  } />
+                  <Route path="*" element={
+                    <ProtectedRoute>
+                      <MainLayout><NotFound /></MainLayout>
+                    </ProtectedRoute>
+                  } />
                 </Routes>
               </BrowserRouter>
             </TooltipProvider>

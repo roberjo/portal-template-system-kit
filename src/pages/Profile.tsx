@@ -3,7 +3,7 @@ import { observer } from 'mobx-react-lite';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { User } from '../store/types';
+import { User, UserPreferencesUpdate } from '../store/types';
 import { useStore } from '../store/StoreContext';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../components/ui/card';
 import { Input } from '../components/ui/input';
@@ -33,40 +33,23 @@ export const Profile = observer(() => {
   
   console.log("Profile page rendering with currentUser:", currentUser);
   
-  // For development: fallback to default user if currentUser is null
-  const user = currentUser || {
-    id: 'dev',
-    name: 'Development User',
-    email: 'dev@example.com',
-    role: 'user',
-    permissions: ['read:all'],
-    preferences: {
-      theme: 'light',
-      notifications: {
-        email: true,
-        push: true,
-        sms: false
-      }
-    }
-  };
-  
   const { register, handleSubmit, control, formState: { errors, isDirty, isSubmitting } } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
-      name: user.name || '',
-      email: user.email || '',
+      name: currentUser?.name || '',
+      email: currentUser?.email || '',
       preferences: {
         notifications: {
-          email: user.preferences?.notifications?.email || false,
-          push: user.preferences?.notifications?.push || false,
-          sms: user.preferences?.notifications?.sms || false
+          email: currentUser?.preferences?.notifications?.email || false,
+          push: currentUser?.preferences?.notifications?.push || false,
+          sms: currentUser?.preferences?.notifications?.sms || false
         }
       }
     }
   });
 
   const onSubmit = async (data: ProfileFormData) => {
-    if (!user) return;
+    if (!currentUser) return;
     
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));
@@ -80,11 +63,6 @@ export const Profile = observer(() => {
     // Here you would typically call an API to update the user profile
   };
 
-  if (!currentUser) {
-    console.log("No current user, showing development user data");
-    // Keep showing the form with development data instead of loading message
-  }
-
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">User Profile</h1>
@@ -97,9 +75,9 @@ export const Profile = observer(() => {
           <CardContent className="space-y-4">
             <div className="flex items-center space-x-4">
               <Avatar className="h-20 w-20">
-                <AvatarImage src={user.avatar || undefined} alt={user.name} />
+                <AvatarImage src={currentUser?.avatar || undefined} alt={currentUser?.name} />
                 <AvatarFallback>
-                  {user.name?.split(' ').map(n => n[0]).join('') || 'U'}
+                  {currentUser?.name?.split(' ').map(n => n[0]).join('') || 'U'}
                 </AvatarFallback>
               </Avatar>
               <Button variant="outline" type="button">Change Avatar</Button>
