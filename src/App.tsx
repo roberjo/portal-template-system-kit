@@ -17,6 +17,9 @@ import FormExamples from "./pages/FormExamples";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Settings from "./pages/Settings";
+import Users from "./pages/Users";
+import UserList from "./pages/UserList";
+import AddUser from "./pages/AddUser";
 import { StoreProvider } from "./store/StoreContext";
 import "@fontsource/inter/400.css";
 import "@fontsource/inter/500.css";
@@ -60,6 +63,15 @@ const App = () => {
                       <MainLayout><Settings /></MainLayout>
                     </ProtectedRoute>
                   } />
+                  <Route path="/users" element={
+                    <ProtectedRoute>
+                      <MainLayout><Users /></MainLayout>
+                    </ProtectedRoute>
+                  }>
+                    <Route index element={<Navigate to="/users/list" replace />} />
+                    <Route path="list" element={<UserList />} />
+                    <Route path="new" element={<AddUser />} />
+                  </Route>
                   <Route path="/admin" element={
                     <ProtectedRoute>
                       <MainLayout><AdminPanel /></MainLayout>
