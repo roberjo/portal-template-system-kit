@@ -44,6 +44,9 @@ export class DocumentStore implements IDocumentStore {
   
   // Method to initialize mock data called from RootStore after full initialization
   initializeMockData = () => {
+    console.log("Initializing mock document data");
+    console.log("Mock auth enabled:", ENV.FEATURES.mockAuth);
+    
     if (ENV.FEATURES.mockAuth) {
       this.initMockData();
     }
@@ -51,14 +54,23 @@ export class DocumentStore implements IDocumentStore {
 
   private initMockData = () => {
     const currentUser = this.rootStore.userStore.currentUser;
-    if (!currentUser) return;
+    console.log("Current user in initMockData:", currentUser);
+    
+    if (!currentUser) {
+      console.warn("No current user found, mock documents will not be initialized");
+      return;
+    }
 
     // Generate mock documents using the utility function
     const users = this.rootStore.dataStore.users;
+    console.log("Users found for document generation:", users.length);
     
     if (users.length > 0) {
-      this.documents = generateMockDocuments(users, currentUser.id);
+      const mockDocs = generateMockDocuments(users, currentUser.id);
+      console.log(`Generated ${mockDocs.length} mock documents`);
+      this.documents = mockDocs;
     } else {
+      console.log("No users found, creating default documents for current user");
       // Fallback to basic mock documents if users list is empty
       const now = new Date().toISOString();
       const yesterday = new Date(Date.now() - 86400000).toISOString();

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import { useStore } from '../store/StoreContext';
 import { useNavigate } from 'react-router-dom';
+import { ENV } from '../config/env';
 import { 
   FileUp, 
   Search, 
@@ -19,7 +20,11 @@ import {
   Share2,
   Calendar,
   Tag,
-  CheckSquare
+  CheckSquare,
+  LayoutGrid,
+  List,
+  Clock,
+  User
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -36,18 +41,43 @@ import {
   DropdownMenuCheckboxItem
 } from '../components/ui/dropdown-menu';
 import { Badge } from '../components/ui/badge';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, format } from 'date-fns';
 import { Document, DocumentFilter } from '../store/types';
 import { formatFileSize } from '../utils/formatters';
+import { ToggleGroup, ToggleGroupItem } from '../components/ui/toggle-group';
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '../components/ui/table';
 
 const DocumentList = observer(() => {
   const navigate = useNavigate();
-  const { documentStore } = useStore();
+  const { documentStore, userStore } = useStore();
   const { documents, loading, filters, fetchDocuments, setFilter, resetFilter } = documentStore;
   const [searchTerm, setSearchTerm] = useState('');
+  const [viewType, setViewType] = useState<'grid' | 'list'>('grid');
 
   useEffect(() => {
-    fetchDocuments();
+    console.log("Document page mounted, fetching documents");
+    console.log("Current user:", userStore.currentUser);
+    console.log("Mock auth enabled:", ENV.FEATURES.mockAuth);
+    console.log("Initial document count:", documents.length);
+    
+    // Load documents
+    fetchDocuments().then(result => {
+      console.log("Documents fetched:", result.length);
+      
+      // If no documents and mock auth is enabled, try to initialize them
+      if (result.length === 0 && ENV.FEATURES.mockAuth && userStore.currentUser) {
+        console.log("No documents found with mock auth, trying to initialize mock data");
+        documentStore.initializeMockData();
+        // Try fetching again after a delay
+        setTimeout(() => {
+          fetchDocuments().then(docs => {
+            console.log("Documents after initialization:", docs.length);
+          });
+        }, 500);
+      }
+    }).catch(err => {
+      console.error("Error fetching documents:", err);
+    });
   }, []);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -109,6 +139,169 @@ const DocumentList = observer(() => {
   const handleUploadClick = () => {
     navigate('/documents/upload');
   };
+
+  const renderGridView = () => (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {documents.map((document) => (
+        <Card 
+          key={document.id} 
+          className="cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => handleDocumentClick(document.id)}
+        >
+          <CardContent className="p-0">
+            <div className="flex items-center p-4 border-b">
+              <div className="bg-muted rounded-md p-2 mr-3">
+                {getFileIcon(document.fileType)}
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-medium text-sm truncate" title={document.metadata.title}>
+                  {document.metadata.title}
+                </h3>
+                <p className="text-xs text-muted-foreground truncate">
+                  {document.fileName}
+                </p>
+              </div>
+            </div>
+            <div className="p-4 text-xs text-muted-foreground">
+              <div className="flex items-center mb-2">
+                <Calendar className="h-3.5 w-3.5 mr-2" />
+                <span>Updated {formatDistanceToNow(new Date(document.updatedAt), { addSuffix: true })}</span>
+              </div>
+              <div className="flex items-center mb-2">
+                <CheckSquare className="h-3.5 w-3.5 mr-2" />
+                <span>Version {document.currentVersion}</span>
+                <span className="mx-2">•</span>
+                <span>{formatFileSize(document.fileSize)}</span>
+              </div>
+              {document.metadata.tags && document.metadata.tags.length > 0 && (
+                <div className="flex items-start mb-2">
+                  <Tag className="h-3.5 w-3.5 mr-2 mt-0.5" />
+                  <div className="flex flex-wrap gap-1">
+                    {document.metadata.tags.slice(0, 3).map((tag) => (
+                      <Badge key={tag} variant="outline" className="text-[10px] h-5 px-1.5 whitespace-nowrap">
+                        {tag}
+                      </Badge>
+                    ))}
+                    {document.metadata.tags.length > 3 && (
+                      <Badge variant="outline" className="text-[10px] h-5 px-1.5">
+                        +{document.metadata.tags.length - 3}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              )}
+              {document.sharedWith.length > 0 && (
+                <div className="flex items-center">
+                  <Share2 className="h-3.5 w-3.5 mr-2" />
+                  <span>
+                    Shared with {document.sharedWith.length} user{document.sharedWith.length !== 1 ? 's' : ''}
+                  </span>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+
+  const renderListView = () => (
+    <div className="rounded-md border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-[300px]">Name</TableHead>
+            <TableHead>Owner</TableHead>
+            <TableHead>Last Updated</TableHead>
+            <TableHead>Size</TableHead>
+            <TableHead>Category</TableHead>
+            <TableHead className="w-[200px]">Tags</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {documents.map((document) => (
+            <TableRow 
+              key={document.id}
+              className="cursor-pointer hover:bg-muted/50"
+              onClick={() => handleDocumentClick(document.id)}
+            >
+              <TableCell className="font-medium">
+                <div className="flex items-center">
+                  <div className="mr-2">
+                    {getFileIcon(document.fileType, "h-5 w-5")}
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm" title={document.metadata.title}>
+                      {document.metadata.title}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {document.fileName}
+                    </p>
+                  </div>
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center text-sm">
+                  <User className="h-3.5 w-3.5 mr-1.5" />
+                  {document.ownerName}
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center text-sm">
+                  <Clock className="h-3.5 w-3.5 mr-1.5" />
+                  <span title={format(new Date(document.updatedAt), 'PPP p')}>
+                    {formatDistanceToNow(new Date(document.updatedAt), { addSuffix: true })}
+                  </span>
+                </div>
+              </TableCell>
+              <TableCell>
+                <span className="text-sm">
+                  {formatFileSize(document.fileSize)}
+                </span>
+              </TableCell>
+              <TableCell>
+                <Badge variant="outline">{document.metadata.category || 'Uncategorized'}</Badge>
+              </TableCell>
+              <TableCell>
+                <div className="flex flex-wrap gap-1 max-w-[200px]">
+                  {document.metadata.tags.slice(0, 2).map((tag) => (
+                    <Badge key={tag} variant="secondary" className="text-xs">
+                      {tag}
+                    </Badge>
+                  ))}
+                  {document.metadata.tags.length > 2 && (
+                    <Badge variant="secondary" className="text-xs">
+                      +{document.metadata.tags.length - 2}
+                    </Badge>
+                  )}
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+
+  const renderEmptyState = () => (
+    <div className="flex flex-col items-center justify-center py-12 text-center">
+      <div className="bg-muted rounded-full p-3 mb-4">
+        <FileText className="h-6 w-6 text-muted-foreground" />
+      </div>
+      <h3 className="font-medium text-lg mb-1">No documents found</h3>
+      <p className="text-muted-foreground mb-4">
+        {searchTerm || filters.ownedByMe || filters.sharedWithMe
+          ? "Try changing your search or filters"
+          : "Upload your first document to get started"}
+      </p>
+      {!(searchTerm || filters.ownedByMe || filters.sharedWithMe) && (
+        <Button onClick={handleUploadClick}>
+          <FileUp className="mr-2 h-4 w-4" />
+          Upload Document
+        </Button>
+      )}
+    </div>
+  );
 
   return (
     <div className="space-y-6">
@@ -216,6 +409,15 @@ const DocumentList = observer(() => {
                     <SortDesc className="h-4 w-4" />
                   }
                 </Button>
+
+                <ToggleGroup type="single" value={viewType} onValueChange={(value) => value && setViewType(value as 'grid' | 'list')}>
+                  <ToggleGroupItem value="grid" aria-label="Grid view">
+                    <LayoutGrid className="h-4 w-4" />
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="list" aria-label="List view">
+                    <List className="h-4 w-4" />
+                  </ToggleGroupItem>
+                </ToggleGroup>
               </div>
             </div>
           </div>
@@ -278,86 +480,9 @@ const DocumentList = observer(() => {
               <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
             </div>
           ) : documents.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="bg-muted rounded-full p-3 mb-4">
-                <FileText className="h-6 w-6 text-muted-foreground" />
-              </div>
-              <h3 className="font-medium text-lg mb-1">No documents found</h3>
-              <p className="text-muted-foreground mb-4">
-                {searchTerm || filters.ownedByMe || filters.sharedWithMe
-                  ? "Try changing your search or filters"
-                  : "Upload your first document to get started"}
-              </p>
-              {!(searchTerm || filters.ownedByMe || filters.sharedWithMe) && (
-                <Button onClick={handleUploadClick}>
-                  <FileUp className="mr-2 h-4 w-4" />
-                  Upload Document
-                </Button>
-              )}
-            </div>
+            renderEmptyState()
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {documents.map((document) => (
-                <Card 
-                  key={document.id} 
-                  className="cursor-pointer hover:shadow-md transition-shadow"
-                  onClick={() => handleDocumentClick(document.id)}
-                >
-                  <CardContent className="p-0">
-                    <div className="flex items-center p-4 border-b">
-                      <div className="bg-muted rounded-md p-2 mr-3">
-                        {getFileIcon(document.fileType)}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-medium text-sm truncate" title={document.metadata.title}>
-                          {document.metadata.title}
-                        </h3>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {document.fileName}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="p-4 text-xs text-muted-foreground">
-                      <div className="flex items-center mb-2">
-                        <Calendar className="h-3.5 w-3.5 mr-2" />
-                        <span>Updated {formatDistanceToNow(new Date(document.updatedAt), { addSuffix: true })}</span>
-                      </div>
-                      <div className="flex items-center mb-2">
-                        <CheckSquare className="h-3.5 w-3.5 mr-2" />
-                        <span>Version {document.currentVersion}</span>
-                        <span className="mx-2">•</span>
-                        <span>{formatFileSize(document.fileSize)}</span>
-                      </div>
-                      {document.metadata.tags && document.metadata.tags.length > 0 && (
-                        <div className="flex items-start mb-2">
-                          <Tag className="h-3.5 w-3.5 mr-2 mt-0.5" />
-                          <div className="flex flex-wrap gap-1">
-                            {document.metadata.tags.slice(0, 3).map((tag) => (
-                              <Badge key={tag} variant="outline" className="text-[10px] h-5 px-1.5 whitespace-nowrap">
-                                {tag}
-                              </Badge>
-                            ))}
-                            {document.metadata.tags.length > 3 && (
-                              <Badge variant="outline" className="text-[10px] h-5 px-1.5">
-                                +{document.metadata.tags.length - 3}
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                      {document.sharedWith.length > 0 && (
-                        <div className="flex items-center">
-                          <Share2 className="h-3.5 w-3.5 mr-2" />
-                          <span>
-                            Shared with {document.sharedWith.length} user{document.sharedWith.length !== 1 ? 's' : ''}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+            viewType === 'grid' ? renderGridView() : renderListView()
           )}
         </CardContent>
       </Card>

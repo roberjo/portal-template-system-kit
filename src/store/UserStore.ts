@@ -98,6 +98,7 @@ export class UserStore implements IUserStore {
   };
   
   private setMockUser = () => {
+    console.log("Setting mock user");
     this.currentUser = {
       id: '1',
       name: 'John Doe',
@@ -114,6 +115,22 @@ export class UserStore implements IUserStore {
         }
       }
     };
+    
+    // Ensure the current user ID matches a user in the data store
+    const dataStore = rootStore.dataStore;
+    if (dataStore.users.length > 0) {
+      // If the mock user doesn't exist in the dataStore, update the first user to match
+      const existingUser = dataStore.users.find(u => u.id === this.currentUser?.id);
+      if (!existingUser && this.currentUser) {
+        dataStore.users[0].id = this.currentUser.id;
+        dataStore.users[0].name = this.currentUser.name;
+      }
+    }
+    
+    // Initialize document store if needed
+    setTimeout(() => {
+      rootStore.documentStore.initializeMockData();
+    }, 100);
   }
   
   private async fetchUserProfile(token: string): Promise<void> {

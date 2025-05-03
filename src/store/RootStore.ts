@@ -5,6 +5,7 @@ import { UserStore } from './UserStore';
 import { NotificationStore } from './NotificationStore';
 import { DataStore } from './DataStore';
 import { DocumentStore } from './DocumentStore';
+import { ENV } from '../config/env';
 
 export class RootStore implements IRootStore {
   uiStore: UIStore;
@@ -24,7 +25,13 @@ export class RootStore implements IRootStore {
     makeAutoObservable(this);
     
     // Initialize mock data after all stores are created
-    this.documentStore.initializeMockData();
+    if (ENV.FEATURES.mockAuth) {
+      console.log("Mock auth enabled, initializing mock data");
+      // Delay document initialization to ensure user is set
+      setTimeout(() => {
+        this.documentStore.initializeMockData();
+      }, 100);
+    }
   }
 }
 
