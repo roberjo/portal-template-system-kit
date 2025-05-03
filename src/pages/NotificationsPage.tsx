@@ -1,8 +1,7 @@
-
 import React from 'react';
 import { observer } from 'mobx-react-lite';
 import { AlertCircle, Bell, CheckCircle, Info, Trash, AlertTriangle } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import rootStore from '../store/RootStore';
 import { Notification } from '../store/NotificationStore';
 
