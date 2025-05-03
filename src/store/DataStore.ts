@@ -130,6 +130,22 @@ export class DataStore implements IDataStore {
           case 'table_accountActivity':
             return this.tableData.accountActivity;
             
+          case 'table_users':
+            // Create users table data on the fly from the users array
+            if (!this.tableData.users) {
+              this.tableData.users = {
+                columns: [
+                  { id: 'name', header: 'Name', accessorKey: 'name' },
+                  { id: 'email', header: 'Email', accessorKey: 'email' },
+                  { id: 'role', header: 'Role', accessorKey: 'role' },
+                  { id: 'status', header: 'Status', accessorKey: 'status' },
+                  { id: 'lastLogin', header: 'Last Login', accessorKey: 'lastLogin' }
+                ],
+                data: this.users
+              };
+            }
+            return this.tableData.users;
+            
           default:
             throw new Error(`No mock data available for ${dataKey}`);
         }
@@ -281,6 +297,39 @@ export class DataStore implements IDataStore {
       throw error;
     } finally {
       this.loading[key] = false;
+    }
+  }
+  
+  // Helper functions for UI components
+  addUser = (userData: Partial<UserData>): void => {
+    const newUser: UserData = {
+      id: Date.now().toString(),
+      name: userData.name || '',
+      email: userData.email || '',
+      role: userData.role || 'User',
+      status: userData.status || 'active',
+      lastLogin: '-',
+      created: new Date().toISOString().split('T')[0],
+      ...userData
+    };
+    
+    this.users.push(newUser);
+    
+    // Update the users table data if it exists
+    if (this.tableData.users) {
+      this.tableData.users.data = this.users;
+    }
+  }
+  
+  toggleUserStatus = (userId: string): void => {
+    const user = this.users.find(u => u.id === userId);
+    if (user) {
+      user.status = user.status === 'active' ? 'inactive' : 'active';
+      
+      // Update the users table data if it exists
+      if (this.tableData.users) {
+        this.tableData.users.data = [...this.users];
+      }
     }
   }
 }

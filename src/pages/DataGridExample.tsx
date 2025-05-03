@@ -1,9 +1,9 @@
-
 import React, { useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
 import { Check, Edit, Plus, Trash, UserX, User, Eye } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { DataGrid } from '../components/ui/DataGrid';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip';
 import rootStore from '../store/RootStore';
 
 export const DataGridExample = observer(() => {
@@ -159,7 +159,7 @@ export const DataGridExample = observer(() => {
   };
   
   // Create a modified table with action buttons
-  const usersTableWithActions = {
+  const usersTableWithActions = dataStore.tableData['users'] ? {
     ...dataStore.tableData['users'],
     columns: [
       ...(dataStore.tableData['users']?.columns || []),
@@ -168,170 +168,195 @@ export const DataGridExample = observer(() => {
         header: 'Actions',
         cell: (row: any) => (
           <div className="flex items-center space-x-2">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleEditUser(row.id);
-              }}
-              className="p-2 text-primary hover:bg-accent rounded-md transition-colors"
-              aria-label="Edit user"
-            >
-              <Edit className="h-4 w-4" />
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                dataStore.toggleUserStatus(row.id);
-              }}
-              className={`p-2 hover:bg-accent rounded-md transition-colors ${
-                row.status === 'active' ? 'text-success' : 'text-muted-foreground'
-              }`}
-              aria-label={row.status === 'active' ? 'Deactivate user' : 'Activate user'}
-            >
-              {row.status === 'active' ? (
-                <Check className="h-4 w-4" />
-              ) : (
-                <UserX className="h-4 w-4" />
-              )}
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleDeleteUser(row.id);
-              }}
-              className="p-2 text-destructive hover:bg-accent rounded-md transition-colors"
-              aria-label="Delete user"
-            >
-              <Trash className="h-4 w-4" />
-            </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleEditUser(row.id);
+                  }}
+                  className="p-2 text-primary hover:bg-accent rounded-md transition-colors"
+                  aria-label="Edit user"
+                >
+                  <Edit className="h-4 w-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Edit user details</p>
+              </TooltipContent>
+            </Tooltip>
+            
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    dataStore.toggleUserStatus(row.id);
+                  }}
+                  className={`p-2 hover:bg-accent rounded-md transition-colors ${
+                    row.status === 'active' ? 'text-success' : 'text-muted-foreground'
+                  }`}
+                  aria-label={row.status === 'active' ? 'Deactivate user' : 'Activate user'}
+                >
+                  {row.status === 'active' ? (
+                    <Check className="h-4 w-4" />
+                  ) : (
+                    <UserX className="h-4 w-4" />
+                  )}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{row.status === 'active' ? 'Deactivate user' : 'Activate user'}</p>
+              </TooltipContent>
+            </Tooltip>
+            
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteUser(row.id);
+                  }}
+                  className="p-2 text-destructive hover:bg-accent rounded-md transition-colors"
+                  aria-label="Delete user"
+                >
+                  <Trash className="h-4 w-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Delete user</p>
+              </TooltipContent>
+            </Tooltip>
           </div>
         )
       }
     ]
-  };
+  } : null;
   
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1>Data Grid Example</h1>
-      </div>
-      
-      <Card>
-        <CardHeader className="flex flex-row justify-between items-center">
-          <CardTitle>Users Management</CardTitle>
-          <button
-            onClick={handleAddUser}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors flex items-center gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            Add User
-          </button>
-        </CardHeader>
-        <CardContent>
-          {usersTableWithActions && (
-            <DataGrid 
-              data={usersTableWithActions}
-              isLoading={dataStore.loading['table_users']}
-              onRowClick={(row) => {
-                uiStore.openModal({
-                  title: 'User Details',
-                  content: (
-                    <div className="space-y-4">
-                      <div className="flex justify-center mb-4">
-                        <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center">
-                          <User className="h-12 w-12 text-primary/60" />
-                        </div>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <p className="text-sm text-muted-foreground">Name</p>
-                          <p className="font-medium">{row.name}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Email</p>
-                          <p className="font-medium">{row.email}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Role</p>
-                          <p className="font-medium">{row.role}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Department</p>
-                          <p className="font-medium">{row.department}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Status</p>
-                          <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${
-                            row.status === 'active' 
-                              ? 'bg-success/20 text-success' 
-                              : row.status === 'inactive'
-                                ? 'bg-destructive/20 text-destructive'
-                                : 'bg-warning/20 text-warning'
-                          }`}>
-                            {row.status.charAt(0).toUpperCase() + row.status.slice(1)}
+    <TooltipProvider>
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h1>Data Grid Example</h1>
+        </div>
+        
+        <Card>
+          <CardHeader className="flex flex-row justify-between items-center">
+            <CardTitle>Users Management</CardTitle>
+            <button
+              onClick={handleAddUser}
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Add User
+            </button>
+          </CardHeader>
+          <CardContent>
+            {usersTableWithActions && (
+              <DataGrid 
+                data={usersTableWithActions}
+                isLoading={dataStore.loading['table_users']}
+                onRowClick={(row) => {
+                  uiStore.openModal({
+                    title: 'User Details',
+                    content: (
+                      <div className="space-y-4">
+                        <div className="flex justify-center mb-4">
+                          <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center">
+                            <User className="h-12 w-12 text-primary/60" />
                           </div>
                         </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Last Login</p>
-                          <p className="font-medium">{row.lastLogin}</p>
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-sm text-muted-foreground">Name</p>
+                            <p className="font-medium">{row.name}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-muted-foreground">Email</p>
+                            <p className="font-medium">{row.email}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-muted-foreground">Role</p>
+                            <p className="font-medium">{row.role}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-muted-foreground">Department</p>
+                            <p className="font-medium">{row.department}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-muted-foreground">Status</p>
+                            <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${
+                              row.status === 'active' 
+                                ? 'bg-success/20 text-success' 
+                                : row.status === 'inactive'
+                                  ? 'bg-destructive/20 text-destructive'
+                                  : 'bg-warning/20 text-warning'
+                            }`}>
+                              {row.status.charAt(0).toUpperCase() + row.status.slice(1)}
+                            </div>
+                          </div>
+                          <div>
+                            <p className="text-sm text-muted-foreground">Last Login</p>
+                            <p className="font-medium">{row.lastLogin}</p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ),
-                  size: 'md'
-                });
-              }}
-              actions={
-                <div className="flex items-center space-x-2">
-                  <select
-                    className="px-3 py-2 bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-sm"
-                    defaultValue=""
-                  >
-                    <option value="" disabled>Bulk Actions</option>
-                    <option value="activate">Activate Selected</option>
-                    <option value="deactivate">Deactivate Selected</option>
-                    <option value="delete">Delete Selected</option>
-                  </select>
-                  <button className="px-4 py-2 bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/90 transition-colors text-sm">
-                    Apply
-                  </button>
-                </div>
-              }
-            />
-          )}
-        </CardContent>
-      </Card>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>Data Grid Usage Guide</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="prose max-w-none">
-            <p>
-              The DataGrid component is a versatile tool for displaying and interacting with tabular data. 
-              It provides built-in functionality for:
-            </p>
-            
-            <ul className="list-disc pl-5 mt-4 space-y-2">
-              <li>Sorting data by clicking on column headers</li>
-              <li>Filtering data using the search box or column filters</li>
-              <li>Pagination to handle large datasets efficiently</li>
-              <li>Row click actions for viewing details or editing</li>
-              <li>Custom action buttons in each row</li>
-              <li>Bulk actions for selected items</li>
-              <li>Responsive design that works on all device sizes</li>
-            </ul>
-            
-            <p className="mt-4">
-              To implement a data grid in your own components, simply import the DataGrid component and 
-              provide it with the appropriate data structure as demonstrated in this example.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+                    ),
+                    size: 'md'
+                  });
+                }}
+                actions={
+                  <div className="flex items-center space-x-2">
+                    <select
+                      className="px-3 py-2 bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+                      defaultValue=""
+                    >
+                      <option value="" disabled>Bulk Actions</option>
+                      <option value="activate">Activate Selected</option>
+                      <option value="deactivate">Deactivate Selected</option>
+                      <option value="delete">Delete Selected</option>
+                    </select>
+                    <button className="px-4 py-2 bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/90 transition-colors text-sm">
+                      Apply
+                    </button>
+                  </div>
+                }
+              />
+            )}
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Data Grid Usage Guide</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="prose max-w-none">
+              <p>
+                The DataGrid component is a versatile tool for displaying and interacting with tabular data. 
+                It provides built-in functionality for:
+              </p>
+              
+              <ul className="list-disc pl-5 mt-4 space-y-2">
+                <li>Sorting data by clicking on column headers</li>
+                <li>Filtering data using the search box or column filters</li>
+                <li>Pagination to handle large datasets efficiently</li>
+                <li>Row click actions for viewing details or editing</li>
+                <li>Custom action buttons in each row</li>
+                <li>Bulk actions for selected items</li>
+                <li>Responsive design that works on all device sizes</li>
+              </ul>
+              
+              <p className="mt-4">
+                To implement a data grid in your own components, simply import the DataGrid component and 
+                provide it with the appropriate data structure as demonstrated in this example.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </TooltipProvider>
   );
 });
 

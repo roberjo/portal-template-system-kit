@@ -46,6 +46,7 @@ const App = () => {
                   <Route path="/data" element={<MainLayout><DataGridExample /></MainLayout>} />
                   <Route path="/forms" element={<MainLayout><Navigate to="/forms/basic" replace /></MainLayout>} />
                   <Route path="/forms/basic" element={<MainLayout><FormExamples /></MainLayout>} />
+                  <Route path="/forms/advanced" element={<MainLayout><FormExamples /></MainLayout>} />
                   <Route path="*" element={<MainLayout><NotFound /></MainLayout>} />
                 </Routes>
               </BrowserRouter>

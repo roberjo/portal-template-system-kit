@@ -1,7 +1,6 @@
-
 import React, { useState } from 'react';
 import { Search, ChevronDown, ChevronUp, Filter } from 'lucide-react';
-import { TableData } from '../../store/DataStore';
+import { TableData } from '../../store/types';
 
 interface DataGridProps {
   data: TableData;
@@ -44,7 +43,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
   
   // Apply sorting
   const sortedRows = React.useMemo(() => {
-    let sortableRows = [...data.rows];
+    let sortableRows = [...data.data];
     
     if (sortConfig) {
       sortableRows.sort((a, b) => {
@@ -62,7 +61,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
     }
     
     return sortableRows;
-  }, [data.rows, sortConfig]);
+  }, [data.data, sortConfig]);
   
   // Apply filtering
   const filteredRows = React.useMemo(() => {
@@ -123,7 +122,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
                   <div className="flex items-center space-x-1">
                     <span>{column.header}</span>
                     
-                    {column.sortable && (
+                    {column.sortable !== false && (
                       <button
                         onClick={() => handleSort(column.accessorKey || column.id)}
                         className="p-1 rounded hover:bg-accent/50"
