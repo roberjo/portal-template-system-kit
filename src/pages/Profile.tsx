@@ -5,11 +5,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { User, UserStore } from '../store/UserStore';
 import { useStore } from '../store/StoreContext';
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../components/ui/Card';
-import { Input } from '../components/ui/Input';
-import { Button } from '../components/ui/Button';
-import { Label } from '../components/ui/Label';
-import { Avatar, AvatarImage, AvatarFallback } from '../components/ui/Avatar';
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../components/ui/card';
+import { Input } from '../components/ui/input';
+import { Button } from '../components/ui/button';
+import { Label } from '../components/ui/label';
+import { Avatar, AvatarImage, AvatarFallback } from '../components/ui/avatar';
 import { ThemeToggle } from '../components/theme/ThemeToggle';
 
 const profileSchema = z.object({
