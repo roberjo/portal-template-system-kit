@@ -1,309 +1,160 @@
-
-import React, { useState } from 'react';
+import React from 'react';
 import { observer } from 'mobx-react-lite';
-import { Bell, Lock, Moon, Shield, Sun, User } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
-import rootStore from '../store/RootStore';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { User, UserStore } from '../store/UserStore';
+import { useStore } from '../store/StoreContext';
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../components/ui/Card';
+import { Input } from '../components/ui/Input';
+import { Button } from '../components/ui/Button';
+import { Label } from '../components/ui/Label';
+import { Avatar, AvatarImage, AvatarFallback } from '../components/ui/Avatar';
+import { ThemeToggle } from '../components/theme/ThemeToggle';
+
+const profileSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  email: z.string().email('Invalid email address'),
+  // Avatar would be handled separately (e.g., file upload)
+  preferences: z.object({
+    notifications: z.object({
+      email: z.boolean(),
+      push: z.boolean(),
+      sms: z.boolean()
+    })
+  })
+});
+
+type ProfileFormData = z.infer<typeof profileSchema>;
 
 export const Profile = observer(() => {
-  const { userStore, uiStore, notificationStore } = rootStore;
+  const { userStore } = useStore();
   const { currentUser, updatePreferences } = userStore;
-  const { theme, toggleTheme } = uiStore;
-  
-  const [profileForm, setProfileForm] = useState({
-    name: currentUser?.name || '',
-    email: currentUser?.email || ''
-  });
-  
-  const [notificationSettings, setNotificationSettings] = useState({
-    email: currentUser?.preferences.notifications.email || false,
-    push: currentUser?.preferences.notifications.push || false,
-    sms: currentUser?.preferences.notifications.sms || false
-  });
-  
-  const handleProfileUpdate = (e: React.FormEvent) => {
-    e.preventDefault();
-    // In a real app, save to API
-    notificationStore.addNotification({
-      id: Date.now().toString(),
-      type: 'success',
-      title: 'Profile Updated',
-      message: 'Your profile information has been updated successfully.',
-      duration: 5000
-    });
-  };
-  
-  const handleNotificationSettingsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, checked } = e.target;
-    setNotificationSettings(prev => ({
-      ...prev,
-      [name]: checked
-    }));
-    
-    // Update in store as well
-    updatePreferences({
-      notifications: {
-        ...currentUser!.preferences.notifications,
-        [name]: checked
+
+  const { register, handleSubmit, control, formState: { errors, isDirty, isSubmitting } } = useForm<ProfileFormData>({
+    resolver: zodResolver(profileSchema),
+    defaultValues: {
+      name: currentUser?.name || '',
+      email: currentUser?.email || '',
+      preferences: {
+        notifications: {
+          email: currentUser?.preferences.notifications.email || false,
+          push: currentUser?.preferences.notifications.push || false,
+          sms: currentUser?.preferences.notifications.sms || false
+        }
       }
+    }
+  });
+
+  const onSubmit = async (data: ProfileFormData) => {
+    if (!currentUser) return;
+    
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Update only preferences for now
+    updatePreferences({
+      notifications: data.preferences.notifications
     });
+    
+    console.log('Profile updated:', data);
+    // Here you would typically call an API to update the user profile
   };
-  
+
   if (!currentUser) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="text-center">
-          <p className="text-lg mb-2">User not found</p>
-          <p className="text-muted-foreground">Please log in to view your profile</p>
-        </div>
-      </div>
-    );
+    return <div>Loading user profile...</div>;
   }
-  
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
-        <h1>User Profile</h1>
-        <div className="flex items-center space-x-2">
-          <span className="text-sm text-muted-foreground">Last updated: {new Date().toLocaleString()}</span>
-        </div>
-      </div>
+      <h1 className="text-2xl font-bold">User Profile</h1>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="md:col-span-1">
-          <Card>
-            <CardHeader>
-              <CardTitle>User Info</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col items-center">
-                <div className="w-32 h-32 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                  <User className="h-16 w-16 text-primary/60" />
-                </div>
-                
-                <h2 className="text-xl font-medium">{currentUser.name}</h2>
-                <p className="text-muted-foreground">{currentUser.email}</p>
-                
-                <div className="mt-2 px-3 py-1 bg-primary/10 text-primary rounded-full text-sm">
-                  {currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1)}
-                </div>
-                
-                <button className="mt-6 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors w-full">
-                  Change Avatar
-                </button>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Personal Information</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center space-x-4">
+              <Avatar className="h-20 w-20">
+                <AvatarImage src={currentUser.avatar || undefined} alt={currentUser.name} />
+                <AvatarFallback>
+                  {currentUser.name?.split(' ').map(n => n[0]).join('') || 'U'}
+                </AvatarFallback>
+              </Avatar>
+              <Button variant="outline" type="button">Change Avatar</Button>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="name">Name</Label>
+                <Input id="name" {...register('name')} />
+                {errors.name && <p className="text-destructive text-sm mt-1">{errors.name.message}</p>}
               </div>
-            </CardContent>
-          </Card>
-        </div>
-        
-        <div className="md:col-span-2 space-y-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center gap-2">
-              <User className="h-5 w-5" />
-              <CardTitle>Personal Information</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleProfileUpdate} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="name" className="block text-sm font-medium mb-1">
-                      Full Name
-                    </label>
-                    <input
-                      id="name"
-                      type="text"
-                      value={profileForm.name}
-                      onChange={(e) => setProfileForm({...profileForm, name: e.target.value})}
-                      className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary"
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <label htmlFor="email" className="block text-sm font-medium mb-1">
-                      Email Address
-                    </label>
-                    <input
-                      id="email"
-                      type="email"
-                      value={profileForm.email}
-                      onChange={(e) => setProfileForm({...profileForm, email: e.target.value})}
-                      className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary"
-                      required
-                    />
-                  </div>
-                </div>
-                
-                <div>
-                  <label htmlFor="bio" className="block text-sm font-medium mb-1">
-                    Bio
-                  </label>
-                  <textarea
-                    id="bio"
-                    rows={3}
-                    className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary"
-                    placeholder="Tell us about yourself"
-                  ></textarea>
-                </div>
-                
-                <div className="flex justify-end">
-                  <button 
-                    type="submit" 
-                    className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
-                  >
-                    Save Changes
-                  </button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center gap-2">
-              <Bell className="h-5 w-5" />
-              <CardTitle>Notification Preferences</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">Email Notifications</p>
-                    <p className="text-sm text-muted-foreground">Receive email alerts</p>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      name="email"
-                      className="sr-only peer"
-                      checked={notificationSettings.email}
-                      onChange={handleNotificationSettingsChange}
-                    />
-                    <div className="w-11 h-6 bg-muted rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                  </label>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">Push Notifications</p>
-                    <p className="text-sm text-muted-foreground">Receive push notifications</p>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      name="push"
-                      className="sr-only peer"
-                      checked={notificationSettings.push}
-                      onChange={handleNotificationSettingsChange}
-                    />
-                    <div className="w-11 h-6 bg-muted rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                  </label>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">SMS Notifications</p>
-                    <p className="text-sm text-muted-foreground">Receive text messages</p>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      name="sms"
-                      className="sr-only peer"
-                      checked={notificationSettings.sms}
-                      onChange={handleNotificationSettingsChange}
-                    />
-                    <div className="w-11 h-6 bg-muted rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                  </label>
-                </div>
+              <div>
+                <Label htmlFor="email">Email</Label>
+                <Input id="email" type="email" {...register('email')} />
+                {errors.email && <p className="text-destructive text-sm mt-1">{errors.email.message}</p>}
               </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center gap-2">
-              <Sun className="h-5 w-5 dark:hidden" />
-              <Moon className="h-5 w-5 hidden dark:block" />
-              <CardTitle>Appearance</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Dark Mode</p>
-                  <p className="text-sm text-muted-foreground">Enable dark theme</p>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    className="sr-only peer"
-                    checked={theme === 'dark'}
-                    onChange={toggleTheme}
-                  />
-                  <div className="w-11 h-6 bg-muted rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                </label>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Preferences</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label>Theme</Label>
+              <div className="mt-1">
+                <ThemeToggle />
               </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center gap-2">
-              <Shield className="h-5 w-5" />
-              <CardTitle>Roles & Permissions</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <h3 className="font-medium mb-2">Current Role</h3>
-                  <div className="px-3 py-2 bg-muted rounded-md flex items-center">
-                    {currentUser.role === 'admin' ? (
-                      <div className="px-2 py-1 bg-destructive text-destructive-foreground text-xs rounded-md mr-2">
-                        Admin
-                      </div>
-                    ) : currentUser.role === 'manager' ? (
-                      <div className="px-2 py-1 bg-warning text-warning-foreground text-xs rounded-md mr-2">
-                        Manager
-                      </div>
-                    ) : (
-                      <div className="px-2 py-1 bg-primary text-primary-foreground text-xs rounded-md mr-2">
-                        User
-                      </div>
-                    )}
-                    <span className="text-sm">{currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1)} role with appropriate permissions</span>
-                  </div>
-                </div>
-                
-                <div>
-                  <h3 className="font-medium mb-2">Permissions</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {currentUser.permissions.map((permission, index) => (
-                      <div key={index} className="px-2 py-1 bg-muted text-xs rounded-md">
-                        {permission}
-                      </div>
-                    ))}
-                  </div>
-                </div>
+            </div>
+            
+            <div>
+              <Label>Notification Preferences</Label>
+              <div className="space-y-2 mt-1">
+                <Controller
+                  name="preferences.notifications.email"
+                  control={control}
+                  render={({ field }) => (
+                    <div className="flex items-center space-x-2">
+                      <input type="checkbox" id="emailNotifications" checked={field.value} onChange={field.onChange} className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary" />
+                      <Label htmlFor="emailNotifications">Email Notifications</Label>
+                    </div>
+                  )}
+                />
+                <Controller
+                  name="preferences.notifications.push"
+                  control={control}
+                  render={({ field }) => (
+                    <div className="flex items-center space-x-2">
+                      <input type="checkbox" id="pushNotifications" checked={field.value} onChange={field.onChange} className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary" />
+                      <Label htmlFor="pushNotifications">Push Notifications</Label>
+                    </div>
+                  )}
+                />
+                <Controller
+                  name="preferences.notifications.sms"
+                  control={control}
+                  render={({ field }) => (
+                    <div className="flex items-center space-x-2">
+                      <input type="checkbox" id="smsNotifications" checked={field.value} onChange={field.onChange} className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary" />
+                      <Label htmlFor="smsNotifications">SMS Notifications</Label>
+                    </div>
+                  )}
+                />
               </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center gap-2">
-              <Lock className="h-5 w-5" />
-              <CardTitle>Security</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <button className="px-4 py-2 bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/90 transition-colors w-full">
-                  Change Password
-                </button>
-                
-                <button className="px-4 py-2 bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/90 transition-colors w-full">
-                  Enable Two-Factor Authentication
-                </button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Button type="submit" disabled={!isDirty || isSubmitting}>
+              {isSubmitting ? 'Saving...' : 'Save Preferences'}
+            </Button>
+          </CardFooter>
+        </Card>
+      </form>
     </div>
   );
 });
