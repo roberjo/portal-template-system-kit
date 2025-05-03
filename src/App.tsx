@@ -20,6 +20,9 @@ import Settings from "./pages/Settings";
 import Users from "./pages/Users";
 import UserList from "./pages/UserList";
 import AddUser from "./pages/AddUser";
+import Documents from "./pages/Documents";
+import DocumentUpload from "./pages/DocumentUpload";
+import DocumentDetails from "./pages/DocumentDetails";
 import { StoreProvider } from "./store/StoreContext";
 import "@fontsource/inter/400.css";
 import "@fontsource/inter/500.css";
@@ -72,6 +75,21 @@ const App = () => {
                     <Route path="list" element={<UserList />} />
                     <Route path="new" element={<AddUser />} />
                   </Route>
+                  <Route path="/documents" element={
+                    <ProtectedRoute>
+                      <MainLayout><Documents /></MainLayout>
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/documents/upload" element={
+                    <ProtectedRoute>
+                      <MainLayout><DocumentUpload /></MainLayout>
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/documents/:id" element={
+                    <ProtectedRoute>
+                      <MainLayout><DocumentDetails /></MainLayout>
+                    </ProtectedRoute>
+                  } />
                   <Route path="/admin" element={
                     <ProtectedRoute>
                       <MainLayout><AdminPanel /></MainLayout>

@@ -4,20 +4,27 @@ import { UIStore } from './UIStore';
 import { UserStore } from './UserStore';
 import { NotificationStore } from './NotificationStore';
 import { DataStore } from './DataStore';
+import { DocumentStore } from './DocumentStore';
 
 export class RootStore implements IRootStore {
   uiStore: UIStore;
   userStore: UserStore;
   notificationStore: NotificationStore;
   dataStore: DataStore;
+  documentStore: DocumentStore;
 
   constructor() {
+    // Create stores first
     this.uiStore = new UIStore();
     this.userStore = new UserStore();
     this.notificationStore = new NotificationStore();
     this.dataStore = new DataStore();
+    this.documentStore = new DocumentStore(this);
     
     makeAutoObservable(this);
+    
+    // Initialize mock data after all stores are created
+    this.documentStore.initializeMockData();
   }
 }
 

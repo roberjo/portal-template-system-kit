@@ -10,7 +10,8 @@ import {
   Bell,
   Shield,
   FileText,
-  Grid3X3
+  Grid3X3,
+  Files
 } from 'lucide-react';
 import rootStore from '../../store/RootStore';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
@@ -130,6 +131,17 @@ export const Sidebar = observer(() => {
                   { to: "/users/new", label: "Add User" }
                 ]}
                 requiresAdmin
+              />
+              
+              <NavItem 
+                to="/documents"
+                icon={Files}
+                label="Documents"
+                collapsed={sidebarCollapsed}
+                childItems={[
+                  { to: "/documents", label: "All Documents" },
+                  { to: "/documents/upload", label: "Upload Document" }
+                ]}
               />
               
               <NavItem 

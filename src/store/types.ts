@@ -71,6 +71,86 @@ export interface IUserStore {
   stopInactivityTimer: () => void;
 }
 
+// Document Store types
+export interface DocumentVersion {
+  id: string;
+  versionNumber: number;
+  fileUrl: string;
+  createdAt: string;
+  createdBy: string;
+}
+
+export interface DocumentAuditEntry {
+  id: string;
+  action: 'upload' | 'edit' | 'share' | 'delete' | 'download';
+  userId: string;
+  userName: string;
+  timestamp: string;
+  details: string;
+}
+
+export interface DocumentMetadata {
+  title: string;
+  description: string;
+  tags: string[];
+  category?: string;
+  customFields: Record<string, string>;
+}
+
+export interface DocumentShare {
+  id: string;
+  userId: string;
+  userName: string;
+  permission: 'view' | 'edit' | 'admin';
+  sharedAt: string;
+}
+
+export interface Document {
+  id: string;
+  ownerId: string;
+  ownerName: string;
+  fileName: string;
+  fileSize: number;
+  fileType: string;
+  metadata: DocumentMetadata;
+  currentVersion: number;
+  versions: DocumentVersion[];
+  auditLog: DocumentAuditEntry[];
+  sharedWith: DocumentShare[];
+  createdAt: string;
+  updatedAt: string;
+  isPublic: boolean;
+}
+
+export interface DocumentFilter {
+  searchTerm?: string;
+  category?: string;
+  tags?: string[];
+  sharedWithMe?: boolean;
+  ownedByMe?: boolean;
+  sortBy?: 'name' | 'date' | 'size';
+  sortDirection?: 'asc' | 'desc';
+}
+
+export interface IDocumentStore {
+  documents: Document[];
+  selectedDocument: Document | null;
+  loading: boolean;
+  error: string | null;
+  filters: DocumentFilter;
+  fetchDocuments: (filter?: DocumentFilter) => Promise<Document[]>;
+  uploadDocument: (file: File, metadata: DocumentMetadata) => Promise<Document>;
+  updateDocumentMetadata: (id: string, metadata: DocumentMetadata) => Promise<Document>;
+  uploadNewVersion: (id: string, file: File) => Promise<Document>;
+  shareDocument: (id: string, userId: string, permission: 'view' | 'edit' | 'admin') => Promise<boolean>;
+  deleteDocument: (id: string) => Promise<boolean>;
+  getDocumentById: (id: string) => Promise<Document | null>;
+  getDocumentVersions: (id: string) => Promise<DocumentVersion[]>;
+  getAuditLog: (id: string) => Promise<DocumentAuditEntry[]>;
+  setFilter: (filter: Partial<DocumentFilter>) => void;
+  resetFilter: () => void;
+}
+
 // Notification Store types
 export interface Notification {
   id: string;
@@ -152,4 +232,5 @@ export interface IRootStore {
   userStore: IUserStore;
   notificationStore: INotificationStore;
   dataStore: IDataStore;
+  documentStore: IDocumentStore;
 } 
