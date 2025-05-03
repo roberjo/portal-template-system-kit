@@ -1,6 +1,14 @@
 import { makeAutoObservable } from 'mobx';
-import { IUserStore, User } from './types';
+import { 
+  IUserStore, 
+  User, 
+  UserPreferencesUpdate,
+  LoginCredentials
+} from './types';
+import { ENV } from '../config/env';
 import rootStore from './RootStore';
+
+const INACTIVITY_TIMEOUT = 5 * 60 * 1000; // 5 minutes in milliseconds
 
 export class UserStore implements IUserStore {
   currentUser: User | null = null;
@@ -9,176 +17,282 @@ export class UserStore implements IUserStore {
   error: string | null = null;
   impersonating: boolean = false;
   originalUser: User | null = null;
+  inactivityTimer: NodeJS.Timeout | null = null;
 
   constructor() {
-    makeAutoObservable(this);
-    this.checkAuth();
+    makeAutoObservable(this, {
+      inactivityTimer: false // Don't observe the timer
+    });
+    this.initializeAuth();
   }
 
-  // Replace or modify the method that's accessing the private property
   applyUserPreferences = (user: User) => {
     if (user && user.preferences && user.preferences.theme) {
-      // Use a public method instead of directly accessing the private property
       rootStore.uiStore.setTheme(user.preferences.theme);
     }
   }
 
-  checkAuth = async () => {
-    // Check if user is already authenticated (e.g., via token in localStorage)
-    const token = localStorage.getItem('auth_token');
-    if (token) {
-      try {
-        this.loading = true;
-        // In a real app, validate token with API
-        // For demo, we'll simulate a successful auth
-        const user = JSON.parse(localStorage.getItem('user') || 'null');
-        if (user) {
-          this.setUser(user);
-        }
-        this.loading = false;
-      } catch (error) {
-        this.loading = false;
-        this.error = 'Authentication failed';
-        this.logout();
+  initializeAuth = () => {
+    const token = localStorage.getItem(ENV.AUTH_CONFIG.tokenStorageKey);
+    const tokenExpiry = localStorage.getItem(ENV.AUTH_CONFIG.tokenExpiryKey);
+    
+    if (token && tokenExpiry && new Date(tokenExpiry) > new Date()) {
+      this.loading = true;
+      
+      if (ENV.FEATURES.mockAuth) {
+        setTimeout(() => {
+          this.setMockUser();
+          this.isAuthenticated = true;
+          this.loading = false;
+          this.startInactivityTimer();
+        }, 500);
+      } else {
+        this.fetchUserProfile(token)
+          .then(() => this.startInactivityTimer())
+          .catch(() => {
+            this.logout();
+          });
       }
     }
+  }
+  
+  resetInactivityTimer = () => {
+    if (this.inactivityTimer) {
+      clearTimeout(this.inactivityTimer);
+    }
+    
+    this.inactivityTimer = setTimeout(() => {
+      console.log('Session expired due to inactivity');
+      this.logout();
+    }, INACTIVITY_TIMEOUT);
   };
-
-  login = async (email: string, password: string) => {
+  
+  startInactivityTimer = () => {
+    this.resetInactivityTimer();
+    
+    window.addEventListener('mousedown', this.resetInactivityTimer);
+    window.addEventListener('keydown', this.resetInactivityTimer);
+    window.addEventListener('mousemove', this.throttleResetTimer);
+    window.addEventListener('touchstart', this.resetInactivityTimer);
+  };
+  
+  stopInactivityTimer = () => {
+    if (this.inactivityTimer) {
+      clearTimeout(this.inactivityTimer);
+      this.inactivityTimer = null;
+    }
+    
+    window.removeEventListener('mousedown', this.resetInactivityTimer);
+    window.removeEventListener('keydown', this.resetInactivityTimer);
+    window.removeEventListener('mousemove', this.throttleResetTimer);
+    window.removeEventListener('touchstart', this.resetInactivityTimer);
+  };
+  
+  private lastMoveTime = 0;
+  throttleResetTimer = () => {
+    const now = Date.now();
+    if (now - this.lastMoveTime > 5000) {
+      this.lastMoveTime = now;
+      this.resetInactivityTimer();
+    }
+  };
+  
+  private setMockUser = () => {
+    this.currentUser = {
+      id: '1',
+      name: 'John Doe',
+      email: 'john.doe@example.com',
+      avatar: '',
+      role: 'admin',
+      permissions: ['read:all', 'write:all', 'admin:all'],
+      preferences: {
+        theme: 'light',
+        notifications: {
+          email: true,
+          push: true,
+          sms: false
+        }
+      }
+    };
+  }
+  
+  private async fetchUserProfile(token: string): Promise<void> {
     try {
-      this.loading = true;
+      const response = await fetch(`${ENV.API_URL}/user/profile`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch user profile');
+      }
+      
+      const userData = await response.json();
+      this.currentUser = userData;
+      this.isAuthenticated = true;
+      this.loading = false;
+    } catch (error) {
+      this.error = 'Failed to fetch user profile';
+      this.loading = false;
+      throw error;
+    }
+  }
+  
+  login = async (credentials: LoginCredentials): Promise<boolean> => {
+    this.loading = true;
+    this.error = null;
+    
+    try {
+      if (ENV.FEATURES.mockAuth) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        if (credentials.email === 'admin@example.com' && credentials.password === 'password') {
+          this.setMockUser();
+          this.isAuthenticated = true;
+          
+          const expiryDate = new Date();
+          expiryDate.setHours(expiryDate.getHours() + 24);
+          
+          localStorage.setItem(ENV.AUTH_CONFIG.tokenStorageKey, 'mock-token');
+          localStorage.setItem(ENV.AUTH_CONFIG.tokenExpiryKey, expiryDate.toISOString());
+          
+          if (credentials.remember) {
+            localStorage.setItem(ENV.AUTH_CONFIG.refreshTokenStorageKey, 'mock-refresh-token');
+          }
+          
+          this.loading = false;
+          this.startInactivityTimer();
+          return true;
+        } else {
+          throw new Error('Invalid email or password');
+        }
+      } else {
+        const response = await fetch(ENV.AUTH_CONFIG.loginEndpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(credentials)
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Login failed');
+        }
+        
+        const data = await response.json();
+        
+        localStorage.setItem(ENV.AUTH_CONFIG.tokenStorageKey, data.token);
+        localStorage.setItem(ENV.AUTH_CONFIG.tokenExpiryKey, data.expiry);
+        
+        if (credentials.remember && data.refreshToken) {
+          localStorage.setItem(ENV.AUTH_CONFIG.refreshTokenStorageKey, data.refreshToken);
+        }
+        
+        await this.fetchUserProfile(data.token);
+        this.startInactivityTimer();
+        
+        return true;
+      }
+    } catch (error) {
+      this.error = error instanceof Error ? error.message : 'An unknown error occurred';
+      this.loading = false;
+      return false;
+    }
+  }
+  
+  logout = async (): Promise<void> => {
+    this.stopInactivityTimer();
+    this.loading = true;
+    
+    try {
+      if (!ENV.FEATURES.mockAuth) {
+        const token = localStorage.getItem(ENV.AUTH_CONFIG.tokenStorageKey);
+        
+        if (token) {
+          await fetch(ENV.AUTH_CONFIG.logoutEndpoint, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      localStorage.removeItem(ENV.AUTH_CONFIG.tokenStorageKey);
+      localStorage.removeItem(ENV.AUTH_CONFIG.refreshTokenStorageKey);
+      localStorage.removeItem(ENV.AUTH_CONFIG.tokenExpiryKey);
+      
+      this.currentUser = null;
+      this.isAuthenticated = false;
+      this.loading = false;
       this.error = null;
-
-      // In a real app, call API for authentication
-      // For demo, we'll simulate a successful login
-      const mockUser: User = {
-        id: '1',
-        name: 'John Doe',
-        email: email,
-        role: 'admin',
-        permissions: ['read:all', 'write:all'],
+      
+      if (this.impersonating) {
+        this.impersonating = false;
+        this.originalUser = null;
+      }
+    }
+  }
+  
+  updatePreferences = (preferences: UserPreferencesUpdate): void => {
+    if (!this.currentUser) return;
+    
+    this.currentUser = {
+      ...this.currentUser,
+      preferences: {
+        ...this.currentUser.preferences,
+        ...preferences,
+        notifications: {
+          ...this.currentUser.preferences.notifications,
+          ...preferences.notifications
+        }
+      }
+    };
+  }
+  
+  startImpersonation = async (userId: string): Promise<void> => {
+    if (!this.currentUser || this.impersonating) return;
+    
+    this.loading = true;
+    
+    try {
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      this.originalUser = this.currentUser;
+      
+      this.currentUser = {
+        id: userId,
+        name: 'Impersonated User',
+        email: 'user@example.com',
+        role: 'user',
+        permissions: ['read:own'],
         preferences: {
-          theme: 'light',
           notifications: {
-            email: true,
+            email: false,
             push: true,
             sms: false
           }
         }
       };
-
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Store auth token and user data
-      localStorage.setItem('auth_token', 'mock_token_12345');
-      localStorage.setItem('user', JSON.stringify(mockUser));
-
-      this.setUser(mockUser);
-      this.loading = false;
-      return true;
+      
+      this.impersonating = true;
     } catch (error) {
+      this.error = 'Failed to start impersonation';
+    } finally {
       this.loading = false;
-      this.error = 'Invalid email or password';
-      return false;
     }
-  };
-
-  logout = () => {
-    // If impersonating, return to original user
-    if (this.impersonating && this.originalUser) {
-      this.endImpersonation();
-      return;
-    }
-
-    // Clear auth data
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('user');
+  }
+  
+  stopImpersonation = (): void => {
+    if (!this.impersonating || !this.originalUser) return;
     
-    this.currentUser = null;
-    this.isAuthenticated = false;
-    this.error = null;
-    
-    // Redirect to login page or home
-    window.location.href = '/login';
-  };
-
-  setUser = (user: User) => {
-    this.currentUser = user;
-    this.isAuthenticated = true;
-    this.applyUserPreferences(user);
-  };
-
-  updateUserProfile = async (userData: Partial<User>) => {
-    try {
-      this.loading = true;
-      
-      // In a real app, call API to update user data
-      // For demo, we'll just update the local state
-      
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      if (this.currentUser) {
-        const updatedUser = {
-          ...this.currentUser,
-          ...userData
-        };
-        
-        // Update localStorage
-        localStorage.setItem('user', JSON.stringify(updatedUser));
-        
-        this.setUser(updatedUser);
-      }
-      
-      this.loading = false;
-      return true;
-    } catch (error) {
-      this.loading = false;
-      this.error = 'Failed to update profile';
-      return false;
-    }
-  };
-
-  startImpersonation = (user: User) => {
-    // Store the original user
-    this.originalUser = this.currentUser;
-    
-    // Set the impersonated user
-    this.currentUser = user;
-    this.impersonating = true;
-    
-    // Apply the impersonated user's preferences
-    this.applyUserPreferences(user);
-    
-    // Notify the user
-    rootStore.notificationStore.addNotification({
-      id: Date.now().toString(),
-      type: 'warning',
-      title: 'Impersonation Active',
-      message: `You are now impersonating ${user.name}`,
-      duration: 5000
-    });
-  };
-
-  endImpersonation = () => {
-    if (this.originalUser) {
-      // Restore the original user
-      this.currentUser = this.originalUser;
-      this.originalUser = null;
-      this.impersonating = false;
-      
-      // Apply the original user's preferences
-      this.applyUserPreferences(this.currentUser);
-      
-      // Notify the user
-      rootStore.notificationStore.addNotification({
-        id: Date.now().toString(),
-        type: 'info',
-        title: 'Impersonation Ended',
-        message: 'You have returned to your account',
-        duration: 5000
-      });
-    }
-  };
+    this.currentUser = this.originalUser;
+    this.originalUser = null;
+    this.impersonating = false;
+  }
 }

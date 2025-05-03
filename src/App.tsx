@@ -7,6 +7,7 @@ import { MainLayout } from "./components/layout/MainLayout";
 import { ThemeProvider } from "./components/providers/ThemeProvider";
 import { ErrorBoundary } from "./components/providers/ErrorBoundary";
 import { ProtectedRoute } from "./components/providers/ProtectedRoute";
+import { SessionTimer } from "./components/providers/SessionTimer";
 import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
 import AdminPanel from "./pages/AdminPanel";
@@ -39,6 +40,7 @@ const App = () => {
             <TooltipProvider>
               <Toaster />
               <Sonner />
+              <SessionTimer />
               <BrowserRouter>
                 <Routes>
                   <Route path="/login" element={<Login />} />

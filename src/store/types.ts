@@ -66,6 +66,9 @@ export interface IUserStore {
   updatePreferences: (preferences: UserPreferencesUpdate) => void;
   startImpersonation: (userId: string) => Promise<void>;
   stopImpersonation: () => void;
+  resetInactivityTimer: () => void;
+  startInactivityTimer: () => void;
+  stopInactivityTimer: () => void;
 }
 
 // Notification Store types
