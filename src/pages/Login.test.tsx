@@ -10,11 +10,14 @@ vi.mock('../store/StoreContext', () => {
   };
 });
 
-// Mock router hooks
-vi.mock('react-router-dom', () => {
+// Mock router hooks - use the actual module but mock specific functions
+vi.mock('react-router-dom', async (importOriginal) => {
+  const actual = await importOriginal();
   return {
+    ...actual,
     useNavigate: () => vi.fn(),
     useLocation: () => ({ pathname: '/login', search: '' }),
+    // Don't mock BrowserRouter as it's used in test-utils
   };
 });
 

@@ -130,17 +130,21 @@ describe('DataGrid Component', () => {
     expect(screen.getByText('John Doe')).toBeInTheDocument();
     expect(screen.queryByText('Julia White')).not.toBeInTheDocument(); // on second page
     
+    // Find page navigation buttons by text
+    const nextButton = screen.getByText('Next');
+    
     // Go to next page
-    const nextPageButton = screen.getByLabelText('Go to next page');
-    fireEvent.click(nextPageButton);
+    fireEvent.click(nextButton);
     
     // Now second page should be visible
     expect(screen.queryByText('John Doe')).not.toBeInTheDocument(); // no longer visible
     expect(screen.getByText('Julia White')).toBeInTheDocument(); // now visible
     
+    // Find previous button
+    const prevButton = screen.getByText('Previous');
+    
     // Go back to first page
-    const prevPageButton = screen.getByLabelText('Go to previous page');
-    fireEvent.click(prevPageButton);
+    fireEvent.click(prevButton);
     
     // First page should be visible again
     expect(screen.getByText('John Doe')).toBeInTheDocument();

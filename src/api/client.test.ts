@@ -1,6 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { apiClient } from './client';
 
+// Mock the ENV import
+vi.mock('@config/env', () => {
+  return {
+    ENV: {
+      API_URL: 'https://api.test.com',
+    }
+  };
+});
+
 // Mock fetch globally
 vi.stubGlobal('fetch', vi.fn());
 

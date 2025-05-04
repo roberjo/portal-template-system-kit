@@ -39,9 +39,8 @@ describe('Button Component', () => {
     const button = screen.getByRole('button', { name: /hover me/i })
     expect(button).toBeInTheDocument()
     
-    // Check that it's wrapped in a tooltip
-    const tooltipTrigger = button.closest('[data-state]')
-    expect(tooltipTrigger).toBeInTheDocument()
+    // Since TooltipProvider is in test-utils, we should be able to find the trigger
+    expect(button.closest('[data-state]')).toBeTruthy()
   })
 
   it('is disabled when disabled prop is true', () => {
