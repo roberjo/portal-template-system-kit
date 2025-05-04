@@ -148,11 +148,19 @@ By default, the application uses mock data. To connect to a real API:
 
 ## 📚 Documentation
 
+This project includes comprehensive documentation in the `/docs` directory:
+
+- [Installation Guide](docs/getting-started/installation.md)
+- [Architecture Overview](docs/architecture/overview.md)
+- [API Documentation](docs/api/overview.md)
+- [Component Documentation](docs/components/overview.md)
+- [Testing Guide](docs/guides/testing.md)
+
 For more detailed documentation:
 
-- [Component Documentation](docs/components.md)
-- [State Management Guide](docs/state.md)
-- [Authentication Flow](docs/auth.md)
+- [Main Documentation Index](docs/README.md)
+- [Quality Documentation](QUALITY.md)
+- [GitHub Actions](GITHUB_ACTIONS.md)
 
 ## 🧪 Testing
 

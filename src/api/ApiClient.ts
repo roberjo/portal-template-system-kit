@@ -36,26 +36,29 @@ export type ResponseInterceptor = (response: ApiResponse) => ApiResponse | Promi
 // Type for error interceptors
 export type ErrorInterceptor = (error: ApiError) => ApiError | Promise<ApiError>;
 
+// Type alias for retry status codes
+export type RetryStatusCode = 408 | 429 | 500 | 502 | 503 | 504;
+
 export class ApiClient {
   private static instance: ApiClient;
   private baseUrl: string = '';
   private defaultHeaders: Record<string, string> = {
     'Content-Type': 'application/json'
   };
-  private requestInterceptors: RequestInterceptor[] = [];
-  private responseInterceptors: ResponseInterceptor[] = [];
-  private errorInterceptors: ErrorInterceptor[] = [];
-  private defaultTimeout: number = 30000; // 30 seconds
+  private readonly requestInterceptors: RequestInterceptor[] = [];
+  private readonly responseInterceptors: ResponseInterceptor[] = [];
+  private readonly errorInterceptors: ErrorInterceptor[] = [];
+  private readonly defaultTimeout: number = 30000; // 30 seconds
   
   // Cache for requests
-  private cache: Map<string, { data: any, timestamp: number }> = new Map();
+  private readonly cache: Map<string, { data: any, timestamp: number }> = new Map();
   private cacheTTL: number = 60000; // 1 minute cache TTL by default
-  private requestsInProgress: Map<string, Promise<ApiResponse>> = new Map();
+  private readonly requestsInProgress: Map<string, Promise<ApiResponse>> = new Map();
   private retryCount: number = 3;
   private retryDelay: number = 1000; // 1 second delay between retries
   
   constructor(baseUrl?: string) {
-    this.baseUrl = baseUrl || ENV.API_URL || '';
+    this.baseUrl = baseUrl ?? ENV.API_URL ?? '';
   }
   
   public static getInstance(baseUrl?: string): ApiClient {
@@ -121,19 +124,10 @@ export class ApiClient {
     }
     
     // Build full URL
-    const url = new URL(requestConfig.url.startsWith('http') ? requestConfig.url : `${this.baseUrl}${requestConfig.url}`);
-    
-    // Add query parameters
-    if (requestConfig.params) {
-      Object.entries(requestConfig.params).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          url.searchParams.append(key, value.toString());
-        }
-      });
-    }
+    const url = this.buildUrl(requestConfig);
     
     // Generate cache key
-    const cacheKey = `${requestConfig.method || 'GET'}-${url.toString()}-${JSON.stringify(requestConfig.data || {})}`;
+    const cacheKey = this.generateCacheKey(requestConfig, url);
     
     // Check if the request is already in progress
     if (this.requestsInProgress.has(cacheKey)) {
@@ -141,43 +135,13 @@ export class ApiClient {
     }
     
     // Check cache for GET requests
-    if ((requestConfig.method === 'GET' || !requestConfig.method) && this.cache.has(cacheKey)) {
-      const cachedData = this.cache.get(cacheKey);
-      if (cachedData && Date.now() - cachedData.timestamp < this.cacheTTL) {
-        return {
-          data: cachedData.data,
-          status: 200,
-          statusText: 'OK (cached)',
-          headers: new Headers(),
-          config: requestConfig
-        };
-      }
+    const cachedResponse = this.checkCache<T>(requestConfig, cacheKey);
+    if (cachedResponse) {
+      return cachedResponse;
     }
     
-    // Prepare headers
-    const headers = new Headers({
-      ...this.defaultHeaders,
-      ...requestConfig.headers
-    });
-    
-    // Prepare request options
-    const requestOptions: RequestInit = {
-      method: requestConfig.method || 'GET',
-      headers,
-      cache: requestConfig.cache || 'no-cache',
-      credentials: requestConfig.withCredentials ? 'include' : 'same-origin'
-    };
-    
-    // Add body for non-GET requests
-    if (requestConfig.method !== 'GET' && requestConfig.method !== undefined && requestConfig.data) {
-      if (requestConfig.data instanceof FormData) {
-        requestOptions.body = requestConfig.data;
-        // Remove Content-Type header to let the browser set it with the boundary
-        headers.delete('Content-Type');
-      } else {
-        requestOptions.body = JSON.stringify(requestConfig.data);
-      }
-    }
+    // Prepare headers and request options
+    const { headers, requestOptions } = this.prepareRequestOptions(requestConfig);
     
     // Execute request with retries
     const requestPromise = this.executeWithRetry<T>(url.toString(), requestOptions, requestConfig);
@@ -190,18 +154,91 @@ export class ApiClient {
       this.requestsInProgress.delete(cacheKey);
       
       // Cache successful GET responses
-      if ((requestConfig.method === 'GET' || !requestConfig.method) && response.status >= 200 && response.status < 300) {
-        this.cache.set(cacheKey, {
-          data: response.data,
-          timestamp: Date.now()
-        });
-      }
+      this.cacheSuccessfulResponse(requestConfig, cacheKey, response);
       
       return response;
     } catch (error) {
       // Remove from in-progress map on error
       this.requestsInProgress.delete(cacheKey);
       throw error;
+    }
+  }
+  
+  // Helper to build URL with parameters
+  private buildUrl(config: ApiRequestConfig): URL {
+    const url = new URL(config.url.startsWith('http') ? config.url : `${this.baseUrl}${config.url}`);
+    
+    // Add query parameters
+    if (config.params) {
+      Object.entries(config.params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          url.searchParams.append(key, value.toString());
+        }
+      });
+    }
+    
+    return url;
+  }
+  
+  // Helper to generate cache key
+  private generateCacheKey(config: ApiRequestConfig, url: URL): string {
+    return `${config.method || 'GET'}-${url.toString()}-${JSON.stringify(config.data || {})}`;
+  }
+  
+  // Helper to check cache for GET requests
+  private checkCache<T>(config: ApiRequestConfig, cacheKey: string): ApiResponse<T> | null {
+    if ((config.method === 'GET' || !config.method) && this.cache.has(cacheKey)) {
+      const cachedData = this.cache.get(cacheKey);
+      if (cachedData && Date.now() - cachedData.timestamp < this.cacheTTL) {
+        return {
+          data: cachedData.data,
+          status: 200,
+          statusText: 'OK (cached)',
+          headers: new Headers(),
+          config
+        };
+      }
+    }
+    return null;
+  }
+  
+  // Helper to prepare request options
+  private prepareRequestOptions(config: ApiRequestConfig): { headers: Headers, requestOptions: RequestInit } {
+    // Prepare headers
+    const headers = new Headers({
+      ...this.defaultHeaders,
+      ...config.headers
+    });
+    
+    // Prepare request options
+    const requestOptions: RequestInit = {
+      method: config.method || 'GET',
+      headers,
+      cache: config.cache || 'no-cache',
+      credentials: config.withCredentials ? 'include' : 'same-origin'
+    };
+    
+    // Add body for non-GET requests
+    if (config.method !== 'GET' && config.method !== undefined && config.data) {
+      if (config.data instanceof FormData) {
+        requestOptions.body = config.data;
+        // Remove Content-Type header to let the browser set it with the boundary
+        headers.delete('Content-Type');
+      } else {
+        requestOptions.body = JSON.stringify(config.data);
+      }
+    }
+    
+    return { headers, requestOptions };
+  }
+  
+  // Helper to cache successful responses
+  private cacheSuccessfulResponse<T>(config: ApiRequestConfig, cacheKey: string, response: ApiResponse<T>): void {
+    if ((config.method === 'GET' || !config.method) && response.status >= 200 && response.status < 300) {
+      this.cache.set(cacheKey, {
+        data: response.data,
+        timestamp: Date.now()
+      });
     }
   }
   
@@ -229,118 +266,159 @@ export class ApiClient {
   // Private method to execute request with retries
   private async executeWithRetry<T>(url: string, options: RequestInit, config: ApiRequestConfig, attempt = 0): Promise<ApiResponse<T>> {
     try {
-      // Create AbortController for timeout
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => {
-        controller.abort();
-      }, config.timeout || this.defaultTimeout);
-      
-      // Add signal to options
-      const optionsWithSignal = {
-        ...options,
-        signal: controller.signal
-      };
-      
+      const response = await this.executeFetch<T>(url, options, config);
+      return response;
+    } catch (error) {
+      return this.handleFetchError<T>(error, url, options, config, attempt);
+    }
+  }
+  
+  // Helper to execute fetch with timeout
+  private async executeFetch<T>(url: string, options: RequestInit, config: ApiRequestConfig): Promise<ApiResponse<T>> {
+    // Create AbortController for timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+    }, config.timeout ?? this.defaultTimeout);
+    
+    // Add signal to options
+    const optionsWithSignal = {
+      ...options,
+      signal: controller.signal
+    };
+    
+    try {
       // Execute fetch
       const response = await fetch(url, optionsWithSignal);
       
       // Clear timeout
       clearTimeout(timeoutId);
       
-      // Parse response data
-      let data;
-      const contentType = response.headers.get('content-type');
-      
-      if (contentType && contentType.includes('application/json')) {
-        data = await response.json();
-      } else if (contentType && contentType.includes('text/')) {
-        data = await response.text();
-      } else {
-        data = await response.blob();
-      }
-      
-      // Create response object
-      const apiResponse: ApiResponse<T> = {
-        data,
-        status: response.status,
-        statusText: response.statusText,
-        headers: response.headers,
-        config
-      };
-      
-      // Apply response interceptors
-      let transformedResponse = apiResponse;
-      for (const interceptor of this.responseInterceptors) {
-        transformedResponse = await interceptor(transformedResponse);
-      }
+      // Parse response
+      const apiResponse = await this.parseResponse<T>(response, config);
       
       // Handle error responses
       if (!response.ok) {
-        const apiError: ApiError = {
-          message: `Request failed with status ${response.status}`,
-          status: response.status,
-          data: transformedResponse.data,
-          config
-        };
-        
-        // Apply error interceptors
-        let transformedError = apiError;
-        for (const interceptor of this.errorInterceptors) {
-          transformedError = await interceptor(transformedError);
-        }
-        
-        // Check if we should retry
-        if (attempt < this.retryCount && this.shouldRetry(response.status)) {
-          await this.delay(this.retryDelay * Math.pow(2, attempt));
-          return this.executeWithRetry<T>(url, options, config, attempt + 1);
-        }
-        
-        throw transformedError;
+        throw await this.createErrorFromResponse(apiResponse, response);
       }
       
-      return transformedResponse;
-    } catch (error) {
-      // Handle network errors or aborted requests
-      if (error instanceof DOMException && error.name === 'AbortError') {
-        const apiError: ApiError = {
-          message: 'Request timed out',
-          config
-        };
-        
-        // Apply error interceptors
-        let transformedError = apiError;
-        for (const interceptor of this.errorInterceptors) {
-          transformedError = await interceptor(transformedError);
-        }
-        
-        throw transformedError;
-      }
-      
-      // If it's already an ApiError, just rethrow it
-      if (typeof error === 'object' && error !== null && 'message' in error && 'status' in error) {
-        throw error;
-      }
-      
-      // For other errors, create an ApiError
+      return apiResponse;
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+  
+  // Helper to parse response
+  private async parseResponse<T>(response: Response, config: ApiRequestConfig): Promise<ApiResponse<T>> {
+    // Parse response data
+    let data;
+    const contentType = response.headers.get('content-type');
+    
+    if (contentType?.includes('application/json')) {
+      data = await response.json();
+    } else if (contentType?.includes('text/')) {
+      data = await response.text();
+    } else {
+      data = await response.blob();
+    }
+    
+    // Create response object
+    const apiResponse: ApiResponse<T> = {
+      data,
+      status: response.status,
+      statusText: response.statusText,
+      headers: response.headers,
+      config
+    };
+    
+    // Apply response interceptors
+    let transformedResponse = apiResponse;
+    for (const interceptor of this.responseInterceptors) {
+      transformedResponse = await interceptor(transformedResponse);
+    }
+    
+    return transformedResponse;
+  }
+  
+  // Helper to create error from response
+  private async createErrorFromResponse<T>(apiResponse: ApiResponse<T>, response: Response): Promise<ApiError> {
+    const apiError: ApiError = {
+      message: `Request failed with status ${response.status}`,
+      status: response.status,
+      data: apiResponse.data,
+      config: apiResponse.config
+    };
+    
+    // Apply error interceptors
+    let transformedError = apiError;
+    for (const interceptor of this.errorInterceptors) {
+      transformedError = await interceptor(transformedError);
+    }
+    
+    return transformedError;
+  }
+  
+  // Helper to handle fetch errors
+  private async handleFetchError<T>(
+    error: unknown, 
+    url: string, 
+    options: RequestInit,
+    config: ApiRequestConfig, 
+    attempt: number
+  ): Promise<ApiResponse<T>> {
+    // Handle timeout errors
+    if (error instanceof DOMException && error.name === 'AbortError') {
       const apiError: ApiError = {
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: 'Request timed out',
         config
       };
       
-      // Apply error interceptors
-      let transformedError = apiError;
-      for (const interceptor of this.errorInterceptors) {
-        transformedError = await interceptor(transformedError);
-      }
-      
-      // Check if we should retry
-      if (attempt < this.retryCount) {
+      throw await this.applyErrorInterceptors(apiError);
+    }
+    
+    // If it's already an ApiError, check for retry
+    if (this.isApiError(error)) {
+      // Check if we should retry based on status
+      if (attempt < this.retryCount && error.status && this.shouldRetry(error.status)) {
         await this.delay(this.retryDelay * Math.pow(2, attempt));
         return this.executeWithRetry<T>(url, options, config, attempt + 1);
       }
-      
-      throw transformedError;
+      throw error;
     }
+    
+    // For other errors, create an ApiError
+    const apiError: ApiError = {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      config
+    };
+    
+    const transformedError = await this.applyErrorInterceptors(apiError);
+    
+    // Check if we should retry
+    if (attempt < this.retryCount) {
+      await this.delay(this.retryDelay * Math.pow(2, attempt));
+      return this.executeWithRetry<T>(url, options, config, attempt + 1);
+    }
+    
+    throw transformedError;
+  }
+  
+  // Helper to apply error interceptors
+  private async applyErrorInterceptors(error: ApiError): Promise<ApiError> {
+    let transformedError = error;
+    for (const interceptor of this.errorInterceptors) {
+      transformedError = await interceptor(transformedError);
+    }
+    return transformedError;
+  }
+  
+  // Type guard for ApiError
+  private isApiError(error: unknown): error is ApiError {
+    return (
+      typeof error === 'object' && 
+      error !== null && 
+      'message' in error
+    );
   }
   
   // Helper to check if we should retry based on status code
