@@ -1,15 +1,15 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
-import { DocumentDetailsView } from '@/features/documents/components/DocumentDetailsView';
+import { DocumentDetailsView } from '../components/DocumentDetailsView';
 
-const DocumentDetails = () => {
+const DocumentDetailsPage = () => {
   const { id } = useParams<{ id: string }>();
   
   if (!id) {
-    return <div>Missing document ID</div>;
+    return <div>Document ID not found</div>;
   }
   
   return <DocumentDetailsView documentId={id} />;
 };
 
-export default DocumentDetails;
+export default DocumentDetailsPage; 

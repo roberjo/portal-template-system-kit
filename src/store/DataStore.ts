@@ -23,6 +23,7 @@ export class DataStore implements IDataStore {
   constructor() {
     makeAutoObservable(this);
     
+    console.log("DataStore constructor - initializing mock data");
     // Initialize with mock data
     this.initMockData();
   }
@@ -109,6 +110,8 @@ export class DataStore implements IDataStore {
         created: '2023-03-10'
       }
     ];
+    
+    console.log(`DataStore initialized with ${this.users.length} users`);
   }
   
   fetchData = async (dataKey: string, params?: Record<string, any>): Promise<any> => {
@@ -141,12 +144,24 @@ export class DataStore implements IDataStore {
                   { id: 'status', header: 'Status', accessorKey: 'status' },
                   { id: 'lastLogin', header: 'Last Login', accessorKey: 'lastLogin' }
                 ],
-                data: this.users
+                data: this.users || [] // Ensure data is always an array
               };
+            } else {
+              // Ensure tableData.users always has the data property as an array
+              if (!this.tableData.users.data) {
+                this.tableData.users.data = [];
+              }
             }
             return this.tableData.users;
             
           default:
+            // Return an empty structured data object for tables
+            if (dataKey.startsWith('table_')) {
+              return {
+                columns: [],
+                data: []
+              };
+            }
             throw new Error(`No mock data available for ${dataKey}`);
         }
       } else {
@@ -161,10 +176,30 @@ export class DataStore implements IDataStore {
           throw new Error(`Failed to fetch ${dataKey}`);
         }
         
-        return await response.json();
+        const data = await response.json();
+        
+        // Ensure table data has proper structure
+        if (dataKey.startsWith('table_') && data) {
+          if (!data.columns) data.columns = [];
+          if (!data.data) data.data = [];
+          
+          // Store in the tableData cache
+          const tableKey = dataKey.replace('table_', '');
+          this.tableData[tableKey] = data;
+        }
+        
+        return data;
       }
     } catch (error) {
       console.error(`Error fetching ${dataKey}:`, error);
+      
+      // Return safe defaults for different data types
+      if (dataKey.startsWith('table_')) {
+        return { columns: [], data: [] };
+      } else if (dataKey.startsWith('chart_')) {
+        return { labels: [], datasets: [] };
+      }
+      
       throw error;
     } finally {
       this.loading[dataKey] = false;

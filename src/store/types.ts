@@ -1,5 +1,7 @@
 // Define interfaces for all stores
 import { ReactNode } from 'react';
+import { DocumentService } from '@/features/documents/api/DocumentService';
+import { DocumentStore } from '@/features/documents/store';
 
 // UI Store types
 export interface ModalOptions {
@@ -232,5 +234,6 @@ export interface IRootStore {
   userStore: IUserStore;
   notificationStore: INotificationStore;
   dataStore: IDataStore;
-  documentStore: IDocumentStore;
+  documentStore: DocumentStore;
+  documentService: DocumentService;
 } 

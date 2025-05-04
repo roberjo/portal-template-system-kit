@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
 import { Check, Edit, Plus, Trash, UserX, User, Eye } from 'lucide-react';
@@ -6,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { DataGrid } from '../components/ui/DataGrid';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip';
 import rootStore from '../store/RootStore';
+import { TableData } from '@/store/types';
 
 export const DataGridExample = observer(() => {
   const { dataStore, uiStore, notificationStore } = rootStore;
@@ -160,79 +160,88 @@ export const DataGridExample = observer(() => {
   };
   
   // Create a modified table with action buttons
-  const usersTableWithActions = dataStore.tableData['users'] ? {
-    ...dataStore.tableData['users'],
-    columns: [
-      ...(dataStore.tableData['users']?.columns || []),
-      {
-        id: 'actions',
-        header: 'Actions',
-        cell: (row: any) => (
-          <div className="flex items-center space-x-2">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleEditUser(row.id);
-                  }}
-                  className="p-2 text-primary hover:bg-accent rounded-md transition-colors"
-                  aria-label="Edit user"
-                >
-                  <Edit className="h-4 w-4" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Edit user details</p>
-              </TooltipContent>
-            </Tooltip>
-            
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    dataStore.toggleUserStatus(row.id);
-                  }}
-                  className={`p-2 hover:bg-accent rounded-md transition-colors ${
-                    row.status === 'active' ? 'text-success' : 'text-muted-foreground'
-                  }`}
-                  aria-label={row.status === 'active' ? 'Deactivate user' : 'Activate user'}
-                >
-                  {row.status === 'active' ? (
-                    <Check className="h-4 w-4" />
-                  ) : (
-                    <UserX className="h-4 w-4" />
-                  )}
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>{row.status === 'active' ? 'Deactivate user' : 'Activate user'}</p>
-              </TooltipContent>
-            </Tooltip>
-            
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteUser(row.id);
-                  }}
-                  className="p-2 text-destructive hover:bg-accent rounded-md transition-colors"
-                  aria-label="Delete user"
-                >
-                  <Trash className="h-4 w-4" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Delete user</p>
-              </TooltipContent>
-            </Tooltip>
-          </div>
-        )
-      }
-    ]
-  } : null;
+  const usersTableWithActions = React.useMemo(() => {
+    if (!dataStore.tableData['users']) {
+      return {
+        columns: [],
+        data: []
+      };
+    }
+    
+    return {
+      ...dataStore.tableData['users'],
+      columns: [
+        ...(dataStore.tableData['users']?.columns || []),
+        {
+          id: 'actions',
+          header: 'Actions',
+          cell: (row: any) => (
+            <div className="flex items-center space-x-2">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEditUser(row.id);
+                    }}
+                    className="p-2 text-primary hover:bg-accent rounded-md transition-colors"
+                    aria-label="Edit user"
+                  >
+                    <Edit className="h-4 w-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Edit user details</p>
+                </TooltipContent>
+              </Tooltip>
+              
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      dataStore.toggleUserStatus(row.id);
+                    }}
+                    className={`p-2 hover:bg-accent rounded-md transition-colors ${
+                      row.status === 'active' ? 'text-success' : 'text-muted-foreground'
+                    }`}
+                    aria-label={row.status === 'active' ? 'Deactivate user' : 'Activate user'}
+                  >
+                    {row.status === 'active' ? (
+                      <Check className="h-4 w-4" />
+                    ) : (
+                      <UserX className="h-4 w-4" />
+                    )}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{row.status === 'active' ? 'Deactivate user' : 'Activate user'}</p>
+                </TooltipContent>
+              </Tooltip>
+              
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteUser(row.id);
+                    }}
+                    className="p-2 text-destructive hover:bg-accent rounded-md transition-colors"
+                    aria-label="Delete user"
+                  >
+                    <Trash className="h-4 w-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Delete user</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          )
+        }
+      ]
+    };
+  }, [dataStore.tableData['users']]);
   
   return (
     <TooltipProvider>
@@ -253,78 +262,76 @@ export const DataGridExample = observer(() => {
             </button>
           </CardHeader>
           <CardContent>
-            {usersTableWithActions && (
-              <DataGrid 
-                data={usersTableWithActions}
-                isLoading={dataStore.loading['table_users']}
-                onRowClick={(row) => {
-                  uiStore.openModal({
-                    title: 'User Details',
-                    content: (
-                      <div className="space-y-4">
-                        <div className="flex justify-center mb-4">
-                          <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center">
-                            <User className="h-12 w-12 text-primary/60" />
-                          </div>
-                        </div>
-                        
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <p className="text-sm text-muted-foreground">Name</p>
-                            <p className="font-medium">{row.name}</p>
-                          </div>
-                          <div>
-                            <p className="text-sm text-muted-foreground">Email</p>
-                            <p className="font-medium">{row.email}</p>
-                          </div>
-                          <div>
-                            <p className="text-sm text-muted-foreground">Role</p>
-                            <p className="font-medium">{row.role}</p>
-                          </div>
-                          <div>
-                            <p className="text-sm text-muted-foreground">Department</p>
-                            <p className="font-medium">{row.department}</p>
-                          </div>
-                          <div>
-                            <p className="text-sm text-muted-foreground">Status</p>
-                            <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${
-                              row.status === 'active' 
-                                ? 'bg-success/20 text-success' 
-                                : row.status === 'inactive'
-                                  ? 'bg-destructive/20 text-destructive'
-                                  : 'bg-warning/20 text-warning'
-                            }`}>
-                              {row.status.charAt(0).toUpperCase() + row.status.slice(1)}
-                            </div>
-                          </div>
-                          <div>
-                            <p className="text-sm text-muted-foreground">Last Login</p>
-                            <p className="font-medium">{row.lastLogin}</p>
-                          </div>
+            <DataGrid 
+              data={usersTableWithActions}
+              isLoading={dataStore.loading['table_users']}
+              onRowClick={(row) => {
+                uiStore.openModal({
+                  title: 'User Details',
+                  content: (
+                    <div className="space-y-4">
+                      <div className="flex justify-center mb-4">
+                        <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center">
+                          <User className="h-12 w-12 text-primary/60" />
                         </div>
                       </div>
-                    ),
-                    size: 'md'
-                  });
-                }}
-                actions={
-                  <div className="flex items-center space-x-2">
-                    <select
-                      className="px-3 py-2 bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-sm"
-                      defaultValue=""
-                    >
-                      <option value="" disabled>Bulk Actions</option>
-                      <option value="activate">Activate Selected</option>
-                      <option value="deactivate">Deactivate Selected</option>
-                      <option value="delete">Delete Selected</option>
-                    </select>
-                    <button className="px-4 py-2 bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/90 transition-colors text-sm">
-                      Apply
-                    </button>
-                  </div>
-                }
-              />
-            )}
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Name</p>
+                          <p className="font-medium">{row.name}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Email</p>
+                          <p className="font-medium">{row.email}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Role</p>
+                          <p className="font-medium">{row.role}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Department</p>
+                          <p className="font-medium">{row.department}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Status</p>
+                          <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${
+                            row.status === 'active' 
+                              ? 'bg-success/20 text-success' 
+                              : row.status === 'inactive'
+                                ? 'bg-destructive/20 text-destructive'
+                                : 'bg-warning/20 text-warning'
+                          }`}>
+                            {row.status.charAt(0).toUpperCase() + row.status.slice(1)}
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Last Login</p>
+                          <p className="font-medium">{row.lastLogin}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ),
+                  size: 'md'
+                });
+              }}
+              actions={
+                <div className="flex items-center space-x-2">
+                  <select
+                    className="px-3 py-2 bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+                    defaultValue=""
+                  >
+                    <option value="" disabled>Bulk Actions</option>
+                    <option value="activate">Activate Selected</option>
+                    <option value="deactivate">Deactivate Selected</option>
+                    <option value="delete">Delete Selected</option>
+                  </select>
+                  <button className="px-4 py-2 bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/90 transition-colors text-sm">
+                    Apply
+                  </button>
+                </div>
+              }
+            />
           </CardContent>
         </Card>
         

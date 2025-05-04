@@ -1,4 +1,4 @@
-import { makeAutoObservable } from 'mobx';
+import { makeAutoObservable, action, runInAction } from 'mobx';
 import { 
   IUserStore, 
   User, 
@@ -37,14 +37,16 @@ export class UserStore implements IUserStore {
     const tokenExpiry = localStorage.getItem(ENV.AUTH_CONFIG.tokenExpiryKey);
     
     if (token && tokenExpiry && new Date(tokenExpiry) > new Date()) {
-      this.loading = true;
+      this.setLoading(true);
       
       if (ENV.FEATURES.mockAuth) {
         setTimeout(() => {
-          this.setMockUser();
-          this.isAuthenticated = true;
-          this.loading = false;
-          this.startInactivityTimer();
+          runInAction(() => {
+            this.setMockUser();
+            this.isAuthenticated = true;
+            this.loading = false;
+            this.startInactivityTimer();
+          });
         }, 500);
       } else {
         this.fetchUserProfile(token)
@@ -55,6 +57,10 @@ export class UserStore implements IUserStore {
       }
     }
   }
+  
+  setLoading = action((value: boolean) => {
+    this.loading = value;
+  })
   
   resetInactivityTimer = () => {
     if (this.inactivityTimer) {
@@ -97,7 +103,7 @@ export class UserStore implements IUserStore {
     }
   };
   
-  private setMockUser = () => {
+  private setMockUser = action(() => {
     console.log("Setting mock user");
     this.currentUser = {
       id: '1',
@@ -119,19 +125,24 @@ export class UserStore implements IUserStore {
     // Ensure the current user ID matches a user in the data store
     const dataStore = rootStore.dataStore;
     if (dataStore.users.length > 0) {
+      console.log("DataStore has users:", dataStore.users.length);
       // If the mock user doesn't exist in the dataStore, update the first user to match
       const existingUser = dataStore.users.find(u => u.id === this.currentUser?.id);
       if (!existingUser && this.currentUser) {
+        console.log("Updating first dataStore user to match current user");
         dataStore.users[0].id = this.currentUser.id;
         dataStore.users[0].name = this.currentUser.name;
+      } else {
+        console.log("Mock user found in dataStore:", existingUser);
       }
+    } else {
+      console.warn("DataStore has no users - check DataStore initialization");
     }
     
-    // Initialize document store if needed
-    setTimeout(() => {
-      rootStore.documentStore.initializeMockData();
-    }, 100);
-  }
+    // We don't need to initialize document store since documents are fetched when needed
+    // But we should make sure the data is ready
+    console.log("Mock user setup complete");
+  });
   
   private async fetchUserProfile(token: string): Promise<void> {
     try {
@@ -146,27 +157,36 @@ export class UserStore implements IUserStore {
       }
       
       const userData = await response.json();
-      this.currentUser = userData;
-      this.isAuthenticated = true;
-      this.loading = false;
+      
+      runInAction(() => {
+        this.currentUser = userData;
+        this.isAuthenticated = true;
+        this.loading = false;
+      });
     } catch (error) {
-      this.error = 'Failed to fetch user profile';
-      this.loading = false;
+      runInAction(() => {
+        this.error = 'Failed to fetch user profile';
+        this.loading = false;
+      });
       throw error;
     }
   }
   
   login = async (credentials: LoginCredentials): Promise<boolean> => {
-    this.loading = true;
-    this.error = null;
+    runInAction(() => {
+      this.loading = true;
+      this.error = null;
+    });
     
     try {
       if (ENV.FEATURES.mockAuth) {
         await new Promise(resolve => setTimeout(resolve, 1000));
         
         if (credentials.email === 'admin@example.com' && credentials.password === 'password') {
-          this.setMockUser();
-          this.isAuthenticated = true;
+          runInAction(() => {
+            this.setMockUser();
+            this.isAuthenticated = true;
+          });
           
           const expiryDate = new Date();
           expiryDate.setHours(expiryDate.getHours() + 24);
@@ -178,7 +198,9 @@ export class UserStore implements IUserStore {
             localStorage.setItem(ENV.AUTH_CONFIG.refreshTokenStorageKey, 'mock-refresh-token');
           }
           
-          this.loading = false;
+          runInAction(() => {
+            this.loading = false;
+          });
           this.startInactivityTimer();
           return true;
         } else {
@@ -213,15 +235,19 @@ export class UserStore implements IUserStore {
         return true;
       }
     } catch (error) {
-      this.error = error instanceof Error ? error.message : 'An unknown error occurred';
-      this.loading = false;
+      runInAction(() => {
+        this.error = error instanceof Error ? error.message : 'An unknown error occurred';
+        this.loading = false;
+      });
       return false;
     }
   }
   
   logout = async (): Promise<void> => {
     this.stopInactivityTimer();
-    this.loading = true;
+    runInAction(() => {
+      this.loading = true;
+    });
     
     try {
       if (!ENV.FEATURES.mockAuth) {
@@ -244,19 +270,21 @@ export class UserStore implements IUserStore {
       localStorage.removeItem(ENV.AUTH_CONFIG.refreshTokenStorageKey);
       localStorage.removeItem(ENV.AUTH_CONFIG.tokenExpiryKey);
       
-      this.currentUser = null;
-      this.isAuthenticated = false;
-      this.loading = false;
-      this.error = null;
-      
-      if (this.impersonating) {
-        this.impersonating = false;
-        this.originalUser = null;
-      }
+      runInAction(() => {
+        this.currentUser = null;
+        this.isAuthenticated = false;
+        this.loading = false;
+        this.error = null;
+        
+        if (this.impersonating) {
+          this.impersonating = false;
+          this.originalUser = null;
+        }
+      });
     }
   }
   
-  updatePreferences = (preferences: UserPreferencesUpdate): void => {
+  updatePreferences = action((preferences: UserPreferencesUpdate): void => {
     if (!this.currentUser) return;
     
     this.currentUser = {
@@ -270,46 +298,54 @@ export class UserStore implements IUserStore {
         }
       }
     };
-  }
+  });
   
   startImpersonation = async (userId: string): Promise<void> => {
     if (!this.currentUser || this.impersonating) return;
     
-    this.loading = true;
+    runInAction(() => {
+      this.loading = true;
+    });
     
     try {
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      this.originalUser = this.currentUser;
-      
-      this.currentUser = {
-        id: userId,
-        name: 'Impersonated User',
-        email: 'user@example.com',
-        role: 'user',
-        permissions: ['read:own'],
-        preferences: {
-          notifications: {
-            email: false,
-            push: true,
-            sms: false
+      runInAction(() => {
+        this.originalUser = this.currentUser;
+        
+        this.currentUser = {
+          id: userId,
+          name: 'Impersonated User',
+          email: 'user@example.com',
+          role: 'user',
+          permissions: ['read:own'],
+          preferences: {
+            notifications: {
+              email: false,
+              push: true,
+              sms: false
+            }
           }
-        }
-      };
-      
-      this.impersonating = true;
+        };
+        
+        this.impersonating = true;
+      });
     } catch (error) {
-      this.error = 'Failed to start impersonation';
+      runInAction(() => {
+        this.error = 'Failed to start impersonation';
+      });
     } finally {
-      this.loading = false;
+      runInAction(() => {
+        this.loading = false;
+      });
     }
   }
   
-  stopImpersonation = (): void => {
+  stopImpersonation = action((): void => {
     if (!this.impersonating || !this.originalUser) return;
     
     this.currentUser = this.originalUser;
     this.originalUser = null;
     this.impersonating = false;
-  }
+  });
 }

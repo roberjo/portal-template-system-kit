@@ -43,6 +43,11 @@ export const DataGrid: React.FC<DataGridProps> = ({
   
   // Apply sorting
   const sortedRows = React.useMemo(() => {
+    // Ensure data.data exists and is an array
+    if (!data?.data || !Array.isArray(data.data) || data.data.length === 0) {
+      return [];
+    }
+
     let sortableRows = [...data.data];
     
     if (sortConfig) {
@@ -61,10 +66,15 @@ export const DataGrid: React.FC<DataGridProps> = ({
     }
     
     return sortableRows;
-  }, [data.data, sortConfig]);
+  }, [data?.data, sortConfig]);
   
   // Apply filtering
   const filteredRows = React.useMemo(() => {
+    // If no data, return empty array
+    if (!sortedRows || !Array.isArray(sortedRows)) {
+      return [];
+    }
+    
     return sortedRows.filter(row => {
       // Filter by column filters
       for (const [key, value] of Object.entries(filterConfig)) {
@@ -74,23 +84,28 @@ export const DataGrid: React.FC<DataGridProps> = ({
       }
       
       // Filter by global search
-      if (searchTerm) {
+      if (searchTerm && data?.columns) {
         return data.columns.some(column => {
           const accessorKey = column.accessorKey;
-          return accessorKey && String(row[accessorKey]).toLowerCase().includes(searchTerm.toLowerCase());
+          return accessorKey && row[accessorKey] && String(row[accessorKey]).toLowerCase().includes(searchTerm.toLowerCase());
         });
       }
       
       return true;
     });
-  }, [sortedRows, filterConfig, searchTerm, data.columns]);
+  }, [sortedRows, filterConfig, searchTerm, data?.columns]);
   
   // Pagination
-  const totalPages = Math.ceil(filteredRows.length / rowsPerPage);
-  const paginatedRows = filteredRows.slice(
-    (currentPage - 1) * rowsPerPage,
-    currentPage * rowsPerPage
-  );
+  const totalPages = Math.max(1, Math.ceil(filteredRows.length / rowsPerPage));
+  const paginatedRows = React.useMemo(() => {
+    if (!filteredRows || !Array.isArray(filteredRows)) {
+      return [];
+    }
+    return filteredRows.slice(
+      (currentPage - 1) * rowsPerPage,
+      currentPage * rowsPerPage
+    );
+  }, [filteredRows, currentPage, rowsPerPage]);
   
   return (
     <div className="bg-card border border-border rounded-md overflow-hidden">
@@ -117,7 +132,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
         <table className="w-full data-grid">
           <thead>
             <tr>
-              {data.columns.map((column) => (
+              {data && data.columns && data.columns.map((column) => (
                 <th key={column.id} className="px-4 py-3 text-left">
                   <div className="flex items-center space-x-1">
                     <span>{column.header}</span>
@@ -157,29 +172,29 @@ export const DataGrid: React.FC<DataGridProps> = ({
           <tbody>
             {isLoading ? (
               <tr>
-                <td colSpan={data.columns.length} className="p-4 text-center">
+                <td colSpan={(data && data.columns && data.columns.length) || 1} className="p-4 text-center">
                   <div className="flex justify-center items-center space-x-2">
                     <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
                     <span>Loading...</span>
                   </div>
                 </td>
               </tr>
-            ) : paginatedRows.length === 0 ? (
+            ) : !filteredRows || filteredRows.length === 0 ? (
               <tr>
-                <td colSpan={data.columns.length} className="p-4 text-center">
+                <td colSpan={(data && data.columns && data.columns.length) || 1} className="p-4 text-center">
                   No data available
                 </td>
               </tr>
             ) : (
-              paginatedRows.map((row) => (
+              paginatedRows.map((row, rowIndex) => (
                 <tr 
-                  key={row.id} 
+                  key={row.id || `row-${rowIndex}`} 
                   onClick={() => onRowClick && onRowClick(row)}
                   className={onRowClick ? "hover:bg-accent/50 cursor-pointer" : ""}
                 >
-                  {data.columns.map((column) => (
-                    <td key={`${row.id}-${column.id}`} className="px-4 py-3">
-                      {column.cell ? column.cell(row) : row[column.accessorKey || column.id]}
+                  {data && data.columns && data.columns.map((column, colIndex) => (
+                    <td key={`${row.id || rowIndex}-${column.id || colIndex}`} className="px-4 py-3">
+                      {column.cell ? column.cell(row) : (row[column.accessorKey || column.id] || '')}
                     </td>
                   ))}
                 </tr>
@@ -190,10 +205,10 @@ export const DataGrid: React.FC<DataGridProps> = ({
       </div>
       
       {/* Pagination */}
-      {totalPages > 1 && (
+      {filteredRows && filteredRows.length > 0 && totalPages > 1 && (
         <div className="p-4 border-t border-border flex items-center justify-between">
           <div className="text-sm text-muted-foreground">
-            Showing {((currentPage - 1) * rowsPerPage) + 1} to {Math.min(currentPage * rowsPerPage, filteredRows.length)} of {filteredRows.length} entries
+            Showing {Math.min(filteredRows.length, 1 + (currentPage - 1) * rowsPerPage)} to {Math.min(currentPage * rowsPerPage, filteredRows.length)} of {filteredRows.length} entries
           </div>
           
           <div className="flex space-x-1">

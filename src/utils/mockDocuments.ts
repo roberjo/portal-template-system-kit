@@ -7,6 +7,13 @@ import {
   UserData
 } from '../store/types';
 
+// Use a counter to ensure unique IDs
+let idCounter = 0;
+const getUniqueId = (prefix = '') => {
+  idCounter++;
+  return `${prefix}-${Date.now()}-${idCounter}-${Math.floor(Math.random() * 10000)}`;
+};
+
 /**
  * Generates a set of mock documents for all users in the system
  * @param users List of users to create documents for
@@ -15,6 +22,9 @@ import {
  */
 export function generateMockDocuments(users: UserData[], currentUserId: string): Document[] {
   if (!users.length) return [];
+
+  // Reset counter each time we generate documents
+  idCounter = 0;
 
   const documentTypes = [
     {
@@ -116,6 +126,9 @@ export function generateMockDocuments(users: UserData[], currentUserId: string):
         Date.now() - Math.floor(Math.random() * 30 * 86400000)
       ).toISOString();
       
+      // Generate a unique document ID
+      const docId = `doc-${user.id}-${i}`;
+      
       // Random number of versions (1-3)
       const numVersions = Math.floor(Math.random() * 3) + 1;
       const versions: DocumentVersion[] = [];
@@ -127,7 +140,7 @@ export function generateMockDocuments(users: UserData[], currentUserId: string):
         ).toISOString();
         
         versions.push({
-          id: `v${v}-${Date.now() + i * 100 + v}`,
+          id: getUniqueId(`v${v}-${user.id}`),
           versionNumber: v,
           fileUrl: `/mock-files/${baseName}-v${v}.${docType.extension}`,
           createdAt: versionDate,
@@ -140,7 +153,7 @@ export function generateMockDocuments(users: UserData[], currentUserId: string):
       
       // Initial upload entry
       auditLog.push({
-        id: `a1-${Date.now() + i * 100}`,
+        id: getUniqueId(`a1-${user.id}`),
         action: 'upload',
         userId: user.id,
         userName: user.name,
@@ -151,7 +164,7 @@ export function generateMockDocuments(users: UserData[], currentUserId: string):
       // Add entries for subsequent versions
       for (let v = 2; v <= numVersions; v++) {
         auditLog.push({
-          id: `a${auditLog.length + 1}-${Date.now() + i * 100 + v}`,
+          id: getUniqueId(`a${auditLog.length + 1}-${user.id}`),
           action: 'upload',
           userId: user.id,
           userName: user.name,
@@ -167,7 +180,7 @@ export function generateMockDocuments(users: UserData[], currentUserId: string):
         ).toISOString();
         
         auditLog.push({
-          id: `a${auditLog.length + 1}-${Date.now() + i * 100 + numVersions + 1}`,
+          id: getUniqueId(`a${auditLog.length + 1}-${user.id}`),
           action: 'edit',
           userId: user.id,
           userName: user.name,
@@ -183,7 +196,7 @@ export function generateMockDocuments(users: UserData[], currentUserId: string):
         ).toISOString();
         
         auditLog.push({
-          id: `a${auditLog.length + 1}-${Date.now() + i * 100 + numVersions + 2}`,
+          id: getUniqueId(`a${auditLog.length + 1}-${user.id}`),
           action: 'download',
           userId: user.id,
           userName: user.name,
@@ -214,7 +227,7 @@ export function generateMockDocuments(users: UserData[], currentUserId: string):
           const permission = permissions[Math.floor(Math.random() * 2)]; // Mostly view or edit, rarely admin
           
           sharedWith.push({
-            id: `share-${Date.now() + i * 100 + s}`,
+            id: getUniqueId(`share-${user.id}`),
             userId: shareUser.id,
             userName: shareUser.name,
             permission: permission,
@@ -223,7 +236,7 @@ export function generateMockDocuments(users: UserData[], currentUserId: string):
           
           // Add share action to audit log
           auditLog.push({
-            id: `a${auditLog.length + 1}-${Date.now() + i * 100 + numVersions + 3 + s}`,
+            id: getUniqueId(`a${auditLog.length + 1}-${user.id}`),
             action: 'share',
             userId: user.id,
             userName: user.name,
@@ -235,7 +248,7 @@ export function generateMockDocuments(users: UserData[], currentUserId: string):
       
       // Create the document
       const document: Document = {
-        id: `${Date.now() + i}`,
+        id: docId,
         ownerId: user.id,
         ownerName: user.name,
         fileName: fileName,
