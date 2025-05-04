@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { observer } from 'mobx-react-lite';
-import { useStore } from '../store/StoreContext';
+import { useStore } from '../store/storeFunctions';
 import { UserData } from '../store/types';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -13,12 +13,8 @@ const UserList = observer(() => {
   const { users, loading, fetchData, deleteData } = dataStore;
   const [isLoading, setIsLoading] = useState(false);
 
-  // Load users on component mount
-  useEffect(() => {
-    loadUsers();
-  }, []);
-
-  const loadUsers = async () => {
+  // Wrap loadUsers in useCallback to prevent dependency cycle
+  const loadUsers = useCallback(async () => {
     setIsLoading(true);
     try {
       await fetchData('table_users');
@@ -27,7 +23,12 @@ const UserList = observer(() => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [fetchData]);
+
+  // Load users on component mount
+  useEffect(() => {
+    loadUsers();
+  }, [loadUsers]);
 
   const handleDeleteUser = async (userId: string) => {
     if (window.confirm('Are you sure you want to delete this user?')) {

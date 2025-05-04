@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { observer } from 'mobx-react-lite';
-import { useStore } from '@/store/StoreContext';
+import { useStore } from '@/store/storeFunctions';
 import { useNavigate } from 'react-router-dom';
 import { ENV } from '@/config/env';
 import { 
@@ -83,7 +83,7 @@ export const DocumentListView = observer(() => {
     };
     
     fetchDocuments();
-  }, []);
+  }, [documentStore, userStore.currentUser?.id]);
   
   // Apply search filter when debounced search term changes
   useEffect(() => {
@@ -92,13 +92,13 @@ export const DocumentListView = observer(() => {
       documentStore.setFilter({ searchTerm: debouncedSearchTerm });
       documentStore.fetchDocuments().finally(() => setIsLoading(false));
     }
-  }, [debouncedSearchTerm]);
+  }, [debouncedSearchTerm, documentStore]);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
   };
 
-  const updateFilters = async (filterUpdates: Partial<any>) => {
+  const updateFilters = async (filterUpdates: Partial<DocumentFilter>) => {
     setIsLoading(true);
     setError(null);
     try {

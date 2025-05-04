@@ -8,7 +8,7 @@ import { useRef, useMemo, useCallback } from 'react';
  * @param maxCacheSize - Maximum number of results to cache (default: 50)
  * @returns A memoized version of the function
  */
-export function useMemoized<T extends (...args: any[]) => any>(
+export function useMemoized<T extends (...args: unknown[]) => unknown>(
   fn: T,
   maxCacheSize: number = 50
 ): T {
@@ -63,8 +63,11 @@ export function useEnhancedMemo<T>(
   dependencies: React.DependencyList,
   options?: { cacheKey?: string }
 ): T {
+  // Use factory in dependencies to avoid React Hook warning
+  const memoizedFactory = useCallback(factory, dependencies);
+  
   // Use the standard useMemo for the basic implementation
   return useMemo(() => {
-    return factory();
-  }, dependencies);
+    return memoizedFactory();
+  }, [memoizedFactory]);
 } 

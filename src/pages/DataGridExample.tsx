@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback, useMemo } from 'react';
 import { observer } from 'mobx-react-lite';
 import { Check, Edit, Plus, Trash, UserX, User, Eye } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -6,6 +6,7 @@ import { DataGrid } from '../components/ui/DataGrid';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip';
 import rootStore from '../store/RootStore';
 import { TableData } from '@/store/types';
+import { useStore } from '../store/storeFunctions';
 
 export const DataGridExample = observer(() => {
   const { dataStore, uiStore, notificationStore } = rootStore;
@@ -13,7 +14,7 @@ export const DataGridExample = observer(() => {
   // Load data when component mounts
   useEffect(() => {
     dataStore.fetchData('table_users');
-  }, []);
+  }, [dataStore]);
   
   const handleEditUser = (userId: string) => {
     uiStore.openModal({
@@ -159,8 +160,13 @@ export const DataGridExample = observer(() => {
     });
   };
   
-  // Create a modified table with action buttons
-  const usersTableWithActions = React.useMemo(() => {
+  // Create a useMemo version of the handleEditUser, handleDeleteUser functions
+  // to use in the useMemo dependency array
+  const memoizedHandleEditUser = useCallback(handleEditUser, [uiStore]);
+  const memoizedHandleDeleteUser = useCallback(handleDeleteUser, [uiStore]);
+
+  // Add actions column to table data
+  const usersTableWithActions = useMemo(() => {
     if (!dataStore.tableData['users']) {
       return {
         columns: [],
@@ -175,14 +181,14 @@ export const DataGridExample = observer(() => {
         {
           id: 'actions',
           header: 'Actions',
-          cell: (row: any) => (
+          cell: (row: Record<string, unknown>) => (
             <div className="flex items-center space-x-2">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleEditUser(row.id);
+                      memoizedHandleEditUser(row.id as string);
                     }}
                     className="p-2 text-primary hover:bg-accent rounded-md transition-colors"
                     aria-label="Edit user"
@@ -200,7 +206,7 @@ export const DataGridExample = observer(() => {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      dataStore.toggleUserStatus(row.id);
+                      dataStore.toggleUserStatus(row.id as string);
                     }}
                     className={`p-2 hover:bg-accent rounded-md transition-colors ${
                       row.status === 'active' ? 'text-success' : 'text-muted-foreground'
@@ -224,7 +230,7 @@ export const DataGridExample = observer(() => {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleDeleteUser(row.id);
+                      memoizedHandleDeleteUser(row.id as string);
                     }}
                     className="p-2 text-destructive hover:bg-accent rounded-md transition-colors"
                     aria-label="Delete user"
@@ -241,7 +247,7 @@ export const DataGridExample = observer(() => {
         }
       ]
     };
-  }, [dataStore.tableData['users']]);
+  }, [dataStore.tableData['users'], dataStore, memoizedHandleEditUser, memoizedHandleDeleteUser]);
   
   return (
     <TooltipProvider>

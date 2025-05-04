@@ -2,6 +2,7 @@
 import { ReactNode } from 'react';
 import { DocumentService } from '@/features/documents/api/DocumentService';
 import { DocumentStore } from '@/features/documents/store';
+import { RootStore } from './RootStore';
 
 // UI Store types
 export interface ModalOptions {
@@ -186,9 +187,9 @@ export interface TableData {
     id: string;
     header: string;
     accessorKey: string;
-    cell?: (value: any) => any;
+    cell?: (value: Record<string, unknown>) => React.ReactNode;
   }[];
-  data: Record<string, any>[];
+  data: Record<string, unknown>[];
   pagination?: {
     pageIndex: number;
     pageSize: number;
@@ -215,6 +216,7 @@ export interface UserData {
   status: 'active' | 'inactive' | 'pending';
   lastLogin?: string;
   created: string;
+  [key: string]: unknown;
 }
 
 export interface IDataStore {
@@ -222,10 +224,10 @@ export interface IDataStore {
   tableData: Record<string, TableData>;
   users: UserData[];
   loading: Record<string, boolean>;
-  fetchData: (dataKey: string, params?: Record<string, any>) => Promise<any>;
-  createData: (dataType: string, data: any) => Promise<any>;
-  updateData: (dataType: string, id: string, data: any) => Promise<any>;
-  deleteData: (dataType: string, id: string) => Promise<any>;
+  fetchData: (dataKey: string, params?: Record<string, unknown>) => Promise<unknown>;
+  createData: (dataType: string, data: Record<string, unknown>) => Promise<unknown>;
+  updateData: (dataType: string, id: string, data: Record<string, unknown>) => Promise<unknown>;
+  deleteData: (dataType: string, id: string) => Promise<boolean>;
 }
 
 // Root Store interface
@@ -236,4 +238,7 @@ export interface IRootStore {
   dataStore: IDataStore;
   documentStore: DocumentStore;
   documentService: DocumentService;
-} 
+}
+
+// Add new StoreContextType type alias
+export type StoreContextType = RootStore; 

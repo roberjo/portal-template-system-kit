@@ -114,7 +114,7 @@ export class DataStore implements IDataStore {
     console.log(`DataStore initialized with ${this.users.length} users`);
   }
   
-  fetchData = async (dataKey: string, params?: Record<string, any>): Promise<any> => {
+  fetchData = async (dataKey: string, params?: Record<string, unknown>): Promise<unknown> => {
     this.loading[dataKey] = true;
     
     try {
@@ -206,7 +206,7 @@ export class DataStore implements IDataStore {
     }
   }
   
-  createData = async (dataType: string, data: any): Promise<any> => {
+  createData = async (dataType: string, data: Record<string, unknown>): Promise<unknown> => {
     const key = `create_${dataType}`;
     this.loading[key] = true;
     
@@ -219,9 +219,14 @@ export class DataStore implements IDataStore {
         switch (dataType) {
           case 'user':
             const newUser: UserData = {
-              ...data,
               id: Date.now().toString(),
-              created: new Date().toISOString().split('T')[0]
+              name: (data.name as string) || 'New User',
+              email: (data.email as string) || 'user@example.com',
+              role: (data.role as string) || 'User',
+              status: (data.status as 'active' | 'inactive' | 'pending') || 'active',
+              lastLogin: (data.lastLogin as string) || '-',
+              created: new Date().toISOString().split('T')[0],
+              ...(data as Partial<UserData>)
             };
             this.users = [...this.users, newUser];
             return newUser;
@@ -253,7 +258,7 @@ export class DataStore implements IDataStore {
     }
   }
   
-  updateData = async (dataType: string, id: string, data: any): Promise<any> => {
+  updateData = async (dataType: string, id: string, data: Record<string, unknown>): Promise<unknown> => {
     const key = `update_${dataType}_${id}`;
     this.loading[key] = true;
     
@@ -261,18 +266,24 @@ export class DataStore implements IDataStore {
       if (ENV.FEATURES.mockAuth) {
         // Simulate API latency
         await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // Prepare variable before the switch to avoid lexical declaration warning
+        let updatedData: unknown;
         
         // Handle mock update
         switch (dataType) {
           case 'user':
             this.users = this.users.map(user => 
-              user.id === id ? { ...user, ...data } : user
+              user.id === id ? { ...user, ...data as Partial<UserData> } : user
             );
-            return this.users.find(user => user.id === id);
+            updatedData = this.users.find(user => user.id === id);
+            break;
             
           default:
             throw new Error(`Cannot update mock data for ${dataType}`);
         }
+        
+        return updatedData;
       } else {
         // Real API call
         const response = await fetch(`${ENV.API_URL}/${dataType}/${id}`, {
@@ -297,7 +308,7 @@ export class DataStore implements IDataStore {
     }
   }
   
-  deleteData = async (dataType: string, id: string): Promise<any> => {
+  deleteData = async (dataType: string, id: string): Promise<boolean> => {
     const key = `delete_${dataType}_${id}`;
     this.loading[key] = true;
     
@@ -310,7 +321,7 @@ export class DataStore implements IDataStore {
         switch (dataType) {
           case 'user':
             this.users = this.users.filter(user => user.id !== id);
-            return { success: true };
+            return true;
             
           default:
             throw new Error(`Cannot delete mock data for ${dataType}`);
@@ -325,7 +336,7 @@ export class DataStore implements IDataStore {
           throw new Error(`Failed to delete ${dataType}`);
         }
         
-        return await response.json();
+        return true;
       }
     } catch (error) {
       console.error(`Error deleting ${dataType}:`, error);
@@ -339,12 +350,12 @@ export class DataStore implements IDataStore {
   addUser = (userData: Partial<UserData>): void => {
     const newUser: UserData = {
       id: Date.now().toString(),
-      name: userData.name || '',
-      email: userData.email || '',
+      name: userData.name || 'New User',
+      email: userData.email || 'user@example.com',
       role: userData.role || 'User',
       status: userData.status || 'active',
-      lastLogin: '-',
-      created: new Date().toISOString().split('T')[0],
+      lastLogin: userData.lastLogin || '-',
+      created: userData.created || new Date().toISOString().split('T')[0],
       ...userData
     };
     
@@ -357,14 +368,27 @@ export class DataStore implements IDataStore {
   }
   
   toggleUserStatus = (userId: string): void => {
-    const user = this.users.find(u => u.id === userId);
-    if (user) {
-      user.status = user.status === 'active' ? 'inactive' : 'active';
-      
-      // Update the users table data if it exists
-      if (this.tableData.users) {
-        this.tableData.users.data = [...this.users];
+    this.users = this.users.map(user => {
+      if (user.id === userId) {
+        return {
+          ...user,
+          status: user.status === 'active' ? 'inactive' : 'active'
+        };
       }
+      return user;
+    });
+    
+    // Update the table data if it exists
+    if (this.tableData.users && this.tableData.users.data) {
+      this.tableData.users.data = this.tableData.users.data.map(user => {
+        if (user.id === userId) {
+          return {
+            ...user,
+            status: user.status === 'active' ? 'inactive' : 'active'
+          };
+        }
+        return user;
+      });
     }
   }
 }

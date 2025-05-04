@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
 import { BarChart as BarChartIcon, LineChart as LineChartIcon, PieChart as PieChartIcon } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { useStore } from '../store/StoreContext';
+import { useStore } from '../store/storeFunctions';
 import { DataGrid } from '../components/ui/DataGrid';
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -15,17 +15,10 @@ export const Dashboard = observer(() => {
   
   // Load data when component mounts
   useEffect(() => {
-    const loadDashboardData = async () => {
-      try {
-        await dataStore.fetchData('chart_monthlyActivity');
-        await dataStore.fetchData('chart_userDistribution');
-        await dataStore.fetchData('table_accountActivity');
-      } catch (error) {
-        console.error('Error loading dashboard data:', error);
-      }
-    };
-    
-    loadDashboardData();
+    // Fetch dashboard data
+    dataStore.fetchData('chart_monthlyActivity');
+    dataStore.fetchData('chart_userDistribution');
+    dataStore.fetchData('table_accountActivity');
     
     // Welcome notification
     if (currentUser) {
@@ -37,7 +30,7 @@ export const Dashboard = observer(() => {
         duration: 5000
       });
     }
-  }, []);
+  }, [dataStore, notificationStore, currentUser]);
   
   // Colors for the pie chart
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];

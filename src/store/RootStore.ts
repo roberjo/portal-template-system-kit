@@ -63,6 +63,27 @@ export class RootStore implements IRootStore {
         this.forceGenerateMockDocuments();
       }, 500);
     }
+
+    // Setup Zustand devtools
+    if (process.env.NODE_ENV === 'development') {
+      try {
+        // @ts-expect-error Import is only used in development
+        import('mobx-logger').then(mobxLogger => {
+          mobxLogger.enableLogging({
+            predicate: () => true,
+            action: true,
+            reaction: true,
+            transaction: true,
+            compute: true
+          });
+          console.log('MobX logging enabled in development mode');
+        }).catch(err => {
+          console.warn('Failed to load mobx-logger:', err);
+        });
+      } catch (error) {
+        console.warn('Error setting up mobx-logger:', error);
+      }
+    }
   }
 
   // Setup synchronization between UserStore and DocumentService
