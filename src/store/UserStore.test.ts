@@ -94,6 +94,20 @@ describe('UserStore', () => {
     
     // Create fresh store for each test by resetting the mock
     userStore = { ...mockUserStore };
+    
+    // Implement initializeAuth with localStorage access
+    userStore.initializeAuth.mockImplementation(() => {
+      const token = localStorageMock.getItem(ENV.AUTH_CONFIG.tokenStorageKey);
+      const expiry = localStorageMock.getItem(ENV.AUTH_CONFIG.tokenExpiryKey);
+      
+      if (token && expiry) {
+        const expiryDate = new Date(expiry);
+        if (expiryDate > new Date()) {
+          userStore.setLoading(true);
+        }
+      }
+    });
+    
     userStore.login.mockImplementation(async (credentials: any) => {
       if (credentials.email === 'admin@example.com' && credentials.password === 'password') {
         userStore.isAuthenticated = true;
@@ -114,6 +128,22 @@ describe('UserStore', () => {
           }
         };
         userStore.loading = false;
+        
+        // Store token in localStorage
+        const token = 'mock-jwt-token';
+        const expiry = new Date();
+        expiry.setDate(expiry.getDate() + 7); // 7 days
+        
+        localStorageMock.setItem(ENV.AUTH_CONFIG.tokenStorageKey, token);
+        localStorageMock.setItem(ENV.AUTH_CONFIG.tokenExpiryKey, expiry.toISOString());
+        
+        if (credentials.remember) {
+          localStorageMock.setItem(ENV.AUTH_CONFIG.refreshTokenStorageKey, 'mock-refresh-token');
+        }
+        
+        // Start inactivity timer
+        userStore.startInactivityTimer();
+        
         return true;
       }
       userStore.error = 'Invalid credentials';
@@ -123,6 +153,15 @@ describe('UserStore', () => {
     userStore.logout.mockImplementation(async () => {
       userStore.isAuthenticated = false;
       userStore.currentUser = null;
+      
+      // Remove tokens from localStorage
+      localStorageMock.removeItem(ENV.AUTH_CONFIG.tokenStorageKey);
+      localStorageMock.removeItem(ENV.AUTH_CONFIG.tokenExpiryKey);
+      localStorageMock.removeItem(ENV.AUTH_CONFIG.refreshTokenStorageKey);
+      
+      // Stop inactivity timer
+      userStore.stopInactivityTimer();
+      
       return Promise.resolve();
     });
     
@@ -132,6 +171,16 @@ describe('UserStore', () => {
         ...userStore.currentUser.preferences,
         ...preferences
       };
+    });
+    
+    userStore.applyUserPreferences.mockImplementation((user: any) => {
+      if (user?.preferences?.theme) {
+        mockRootStore.uiStore.setTheme(user.preferences.theme);
+      }
+    });
+    
+    userStore.setLoading.mockImplementation((value: boolean) => {
+      userStore.loading = value;
     });
   });
   
