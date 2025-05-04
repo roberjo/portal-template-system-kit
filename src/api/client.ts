@@ -1,37 +1,39 @@
 import { ENV } from '@config/env';
+import { HttpMethod, ApiError as ApiErrorType, RequestOptions } from './types';
 
-type RequestOptions = {
-  headers?: Record<string, string>;
-  params?: Record<string, string>;
-  cache?: RequestCache;
-  signal?: AbortSignal;
-};
-
-type RequestMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
-
-class ApiError extends Error {
+class ApiError extends Error implements ApiErrorType {
   status: number;
-  data: any;
+  data: unknown;
+  request?: {
+    url: string;
+    method: HttpMethod;
+    data?: unknown;
+    options: {
+      headers: Record<string, string>;
+      [key: string]: unknown;
+    };
+  };
 
-  constructor(message: string, status: number, data?: any) {
+  constructor(message: string, status: number, data?: unknown, request?: ApiErrorType['request']) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
     this.data = data;
+    this.request = request;
   }
 }
 
 const requestInterceptors: ((url: string, options: RequestInit) => [string, RequestInit])[] = [];
 const responseInterceptors: ((response: Response) => Promise<Response>)[] = [];
-const errorInterceptors: ((error: any) => Promise<any>)[] = [];
+const errorInterceptors: ((error: ApiError) => Promise<unknown>)[] = [];
 
 // Cache for GET requests
-const apiCache = new Map<string, { data: any; timestamp: number }>();
+const apiCache = new Map<string, { data: unknown; timestamp: number }>();
 const DEFAULT_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 export const apiClient = {
   // Base request method
-  async request<T>(url: string, method: RequestMethod, data?: any, options: RequestOptions = {}): Promise<T> {
+  async request<T>(url: string, method: HttpMethod, data?: unknown, options: RequestOptions = {}): Promise<T> {
     try {
       let apiUrl = url.startsWith('http') ? url : `${ENV.API_URL || ''}${url}`;
       let requestOptions: RequestInit = {
@@ -51,7 +53,15 @@ export const apiClient = {
 
       // Add query parameters for GET requests
       if (method === 'GET' && options.params) {
-        const queryParams = new URLSearchParams(options.params);
+        const queryParams = new URLSearchParams();
+        
+        // Handle different param types
+        Object.entries(options.params).forEach(([key, value]) => {
+          if (value !== undefined) {
+            queryParams.append(key, String(value));
+          }
+        });
+        
         apiUrl = `${apiUrl}${apiUrl.includes('?') ? '&' : '?'}${queryParams}`;
       }
 
@@ -82,17 +92,30 @@ export const apiClient = {
 
       // Handle response
       if (!response.ok) {
-        let errorData: any;
+        let errorData: unknown;
         try {
           errorData = await response.json();
         } catch (e) {
           errorData = { message: response.statusText };
         }
 
+        const request = {
+          url,
+          method,
+          data,
+          options: { 
+            headers: requestOptions.headers as Record<string, string>,
+            ...options 
+          }
+        };
+
         throw new ApiError(
-          errorData.message || `API error: ${response.status}`,
+          typeof errorData === 'object' && errorData !== null && 'message' in errorData 
+            ? String(errorData.message) 
+            : `API error: ${response.status}`,
           response.status,
-          errorData
+          errorData,
+          request
         );
       }
 
@@ -110,10 +133,18 @@ export const apiClient = {
       return responseData as T;
     } catch (error) {
       // Apply error interceptors
-      let transformedError = error;
+      let transformedError = error instanceof ApiError ? error : new ApiError(
+        error instanceof Error ? error.message : 'Unknown error',
+        0
+      );
+      
       for (const interceptor of errorInterceptors) {
         try {
-          transformedError = await interceptor(transformedError);
+          const result = await interceptor(transformedError);
+          // Only update if the result is an ApiError
+          if (result instanceof ApiError) {
+            transformedError = result;
+          }
         } catch (e) {
           console.error('Error in error interceptor:', e);
         }
@@ -127,15 +158,15 @@ export const apiClient = {
     return this.request<T>(url, 'GET', undefined, options);
   },
 
-  post<T>(url: string, data?: any, options?: RequestOptions): Promise<T> {
+  post<T>(url: string, data?: unknown, options?: RequestOptions): Promise<T> {
     return this.request<T>(url, 'POST', data, options);
   },
 
-  put<T>(url: string, data?: any, options?: RequestOptions): Promise<T> {
+  put<T>(url: string, data?: unknown, options?: RequestOptions): Promise<T> {
     return this.request<T>(url, 'PUT', data, options);
   },
 
-  patch<T>(url: string, data?: any, options?: RequestOptions): Promise<T> {
+  patch<T>(url: string, data?: unknown, options?: RequestOptions): Promise<T> {
     return this.request<T>(url, 'PATCH', data, options);
   },
 
@@ -164,7 +195,7 @@ export const apiClient = {
     };
   },
 
-  addErrorInterceptor(interceptor: (error: any) => Promise<any>) {
+  addErrorInterceptor(interceptor: (error: ApiError) => Promise<unknown>) {
     errorInterceptors.push(interceptor);
     return () => {
       const index = errorInterceptors.indexOf(interceptor);
@@ -179,7 +210,7 @@ export const apiClient = {
     apiCache.clear();
   },
 
-  invalidateCache(url: string, method: RequestMethod = 'GET') {
+  invalidateCache(url: string, method: HttpMethod = 'GET') {
     const cacheKey = `${method}:${url}`;
     apiCache.delete(cacheKey);
   }

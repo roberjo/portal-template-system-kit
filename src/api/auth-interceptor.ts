@@ -1,4 +1,5 @@
 import { apiClient } from './client';
+import { HttpMethod } from './types'; // Import the HttpMethod type from a types file
 
 export const setupAuthInterceptors = (
   getToken: () => string | null,
@@ -29,7 +30,7 @@ export const setupAuthInterceptors = (
             // Retry the request with the new token
             return apiClient.request(
               originalRequest.url,
-              originalRequest.method as any,
+              originalRequest.method as HttpMethod, // Use proper HttpMethod type
               originalRequest.data,
               {
                 ...originalRequest.options,
