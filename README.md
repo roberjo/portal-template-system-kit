@@ -6,7 +6,8 @@
 [![MobX](https://img.shields.io/badge/MobX-6.10.2-orange?logo=mobx)](https://mobx.js.org/)
 [![TailwindCSS](https://img.shields.io/badge/Tailwind-3.x-38B2AC?logo=tailwind-css)](https://tailwindcss.com/)
 [![shadcn/ui](https://img.shields.io/badge/shadcn/ui-latest-black)](https://ui.shadcn.com/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)
+![Last Updated](https://img.shields.io/badge/Last%20Updated-2025-05-04-blue)](LICENSE)
 
 A modern, responsive admin portal template system with authentication, session management, data visualization, and user management features.
 
