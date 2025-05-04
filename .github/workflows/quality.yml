@@ -47,6 +47,13 @@ jobs:
         name: coverage-report
         path: coverage/
         
+    - name: Download coverage report artifacts for badge update
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      uses: actions/download-artifact@v4
+      with:
+        name: coverage-report
+        path: coverage-report
+        
     - name: Update README with coverage badges
       if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       run: |

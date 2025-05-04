@@ -20,6 +20,7 @@
     "lighthouse": "lhci autorun",
     "quality:full": "npm run quality && npm run sonar && npm run lighthouse",
     "coverage:open": "node scripts/run-coverage.js",
+    "coverage:extract": "powershell -File scripts/extract-coverage-report.ps1",
     "update:badges": "node scripts/update-badges.js"
   },
   "dependencies": {

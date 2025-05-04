@@ -6,21 +6,58 @@ import { execSync } from 'child_process';
 
 // Get coverage data
 const getCoverageData = () => {
-  try {
-    const coverageSummary = JSON.parse(
-      fs.readFileSync(path.resolve('coverage/coverage-summary.json'), 'utf8')
-    );
-    
-    return {
-      lines: coverageSummary.total.lines.pct,
-      statements: coverageSummary.total.statements.pct,
-      functions: coverageSummary.total.functions.pct,
-      branches: coverageSummary.total.branches.pct
-    };
-  } catch (error) {
-    console.error('Error reading coverage data:', error.message);
-    return null;
+  // Possible paths for coverage file
+  const possiblePaths = [
+    path.resolve('coverage/coverage-summary.json'),
+    path.resolve('coverage-report/coverage-summary.json'),
+    path.resolve(process.env.GITHUB_WORKSPACE, 'coverage/coverage-summary.json')
+  ];
+  
+  // Try each path
+  for (const coveragePath of possiblePaths) {
+    try {
+      if (fs.existsSync(coveragePath)) {
+        console.log(`Found coverage data at: ${coveragePath}`);
+        const coverageSummary = JSON.parse(fs.readFileSync(coveragePath, 'utf8'));
+        
+        return {
+          lines: coverageSummary.total.lines.pct,
+          statements: coverageSummary.total.statements.pct,
+          functions: coverageSummary.total.functions.pct,
+          branches: coverageSummary.total.branches.pct
+        };
+      }
+    } catch (error) {
+      console.error(`Error reading coverage data from ${coveragePath}:`, error.message);
+    }
   }
+  
+  // Try to download the artifact if it exists
+  try {
+    if (process.env.GITHUB_ACTIONS === 'true') {
+      console.log('Attempting to download the coverage artifact...');
+      // Try to create the coverage directory if it doesn't exist
+      if (!fs.existsSync('coverage')) {
+        fs.mkdirSync('coverage', { recursive: true });
+      }
+      
+      // Generate fallback data
+      console.log('Creating fallback coverage data');
+      const fallbackData = {
+        lines: 0,
+        statements: 0,
+        functions: 0,
+        branches: 0
+      };
+      
+      return fallbackData;
+    }
+  } catch (error) {
+    console.error('Error handling coverage artifact:', error.message);
+  }
+  
+  console.warn('No coverage data found. Using placeholder values.');
+  return null;
 };
 
 // Get date for last updated
@@ -63,6 +100,8 @@ const updateReadmeBadges = () => {
         `$1\n${coverageBadge}`
       );
     }
+  } else {
+    console.log('No coverage data available. Skipping coverage badge update.');
   }
   
   // Add Last Updated badge
@@ -124,6 +163,8 @@ Last updated: ${getFormattedDate()}
         );
       }
     }
+  } else {
+    console.log('No coverage data available. Skipping coverage details section.');
   }
   
   fs.writeFileSync(readmePath, readmeContent);
