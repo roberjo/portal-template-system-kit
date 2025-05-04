@@ -15,6 +15,14 @@ This workflow runs on push to `main` branch and on pull requests targeting `main
 - Lighthouse CI for performance analysis
 - Automatic README badge updates on push to main
 
+### GitHub Actions Used
+
+This workflow uses the following GitHub Actions:
+- actions/checkout@v4
+- actions/setup-node@v4
+- actions/upload-artifact@v4
+- SonarSource/sonarcloud-github-action@master
+
 ### Coverage Badges
 
 The workflow automatically updates the README.md file with:
@@ -58,6 +66,7 @@ When making changes to these workflows:
 1. For significant changes, create a PR with the workflow file changes
 2. Test changes using the `test-badges.yml` workflow when possible
 3. Make sure any badge or documentation updates are working correctly
+4. Keep action versions updated (currently using v4 for most GitHub-provided actions)
 
 ## Repository Settings
 
