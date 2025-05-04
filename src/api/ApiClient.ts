@@ -4,15 +4,15 @@ import { ENV } from '@/config/env';
 export interface ApiRequestConfig {
   url: string;
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
-  params?: Record<string, any>;
-  data?: any;
+  params?: Record<string, string | number | boolean | undefined>;
+  data?: unknown;
   headers?: Record<string, string>;
   timeout?: number;
   cache?: RequestCache;
   withCredentials?: boolean;
 }
 
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   data: T;
   status: number;
   statusText: string;
@@ -23,7 +23,7 @@ export interface ApiResponse<T = any> {
 export interface ApiError {
   message: string;
   status?: number;
-  data?: any;
+  data?: unknown;
   config?: ApiRequestConfig;
 }
 
@@ -39,6 +39,12 @@ export type ErrorInterceptor = (error: ApiError) => ApiError | Promise<ApiError>
 // Type alias for retry status codes
 export type RetryStatusCode = 408 | 429 | 500 | 502 | 503 | 504;
 
+// Interface for cached data
+interface CachedData<T = unknown> {
+  data: T;
+  timestamp: number;
+}
+
 export class ApiClient {
   private static instance: ApiClient;
   private baseUrl: string = '';
@@ -51,7 +57,7 @@ export class ApiClient {
   private readonly defaultTimeout: number = 30000; // 30 seconds
   
   // Cache for requests
-  private readonly cache: Map<string, { data: any, timestamp: number }> = new Map();
+  private readonly cache: Map<string, CachedData> = new Map();
   private cacheTTL: number = 60000; // 1 minute cache TTL by default
   private readonly requestsInProgress: Map<string, Promise<ApiResponse>> = new Map();
   private retryCount: number = 3;
@@ -115,7 +121,7 @@ export class ApiClient {
   }
   
   // Main request method
-  public async request<T = any>(config: ApiRequestConfig): Promise<ApiResponse<T>> {
+  public async request<T>(config: ApiRequestConfig): Promise<ApiResponse<T>> {
     // Apply request interceptors
     let requestConfig = { ...config };
     
@@ -191,7 +197,7 @@ export class ApiClient {
       const cachedData = this.cache.get(cacheKey);
       if (cachedData && Date.now() - cachedData.timestamp < this.cacheTTL) {
         return {
-          data: cachedData.data,
+          data: cachedData.data as T,
           status: 200,
           statusText: 'OK (cached)',
           headers: new Headers(),
@@ -243,23 +249,23 @@ export class ApiClient {
   }
   
   // Helper methods for common HTTP methods
-  public async get<T = any>(url: string, config?: Omit<ApiRequestConfig, 'url' | 'method'>): Promise<ApiResponse<T>> {
+  public async get<T>(url: string, config?: Omit<ApiRequestConfig, 'url' | 'method'>): Promise<ApiResponse<T>> {
     return this.request<T>({ ...config, url, method: 'GET' });
   }
   
-  public async post<T = any>(url: string, data?: any, config?: Omit<ApiRequestConfig, 'url' | 'method' | 'data'>): Promise<ApiResponse<T>> {
+  public async post<T>(url: string, data?: unknown, config?: Omit<ApiRequestConfig, 'url' | 'method' | 'data'>): Promise<ApiResponse<T>> {
     return this.request<T>({ ...config, url, method: 'POST', data });
   }
   
-  public async put<T = any>(url: string, data?: any, config?: Omit<ApiRequestConfig, 'url' | 'method' | 'data'>): Promise<ApiResponse<T>> {
+  public async put<T>(url: string, data?: unknown, config?: Omit<ApiRequestConfig, 'url' | 'method' | 'data'>): Promise<ApiResponse<T>> {
     return this.request<T>({ ...config, url, method: 'PUT', data });
   }
   
-  public async delete<T = any>(url: string, config?: Omit<ApiRequestConfig, 'url' | 'method'>): Promise<ApiResponse<T>> {
+  public async delete<T>(url: string, config?: Omit<ApiRequestConfig, 'url' | 'method'>): Promise<ApiResponse<T>> {
     return this.request<T>({ ...config, url, method: 'DELETE' });
   }
   
-  public async patch<T = any>(url: string, data?: any, config?: Omit<ApiRequestConfig, 'url' | 'method' | 'data'>): Promise<ApiResponse<T>> {
+  public async patch<T>(url: string, data?: unknown, config?: Omit<ApiRequestConfig, 'url' | 'method' | 'data'>): Promise<ApiResponse<T>> {
     return this.request<T>({ ...config, url, method: 'PATCH', data });
   }
   

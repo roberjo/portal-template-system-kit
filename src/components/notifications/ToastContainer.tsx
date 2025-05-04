@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { observer } from 'mobx-react-lite';
 import { CheckCircle, AlertCircle, Info, AlertTriangle, X } from 'lucide-react';
 import rootStore from '../../store/RootStore';
@@ -9,10 +9,10 @@ const ToastItem: React.FC<{ notification: Notification }> = ({ notification }) =
   const { dismissToast } = rootStore.notificationStore;
   const [isExiting, setIsExiting] = React.useState(false);
   
-  const handleDismiss = () => {
+  const handleDismiss = useCallback(() => {
     setIsExiting(true);
     setTimeout(() => dismissToast(notification.id), 300);
-  };
+  }, [dismissToast, notification.id]);
   
   useEffect(() => {
     // Auto dismiss after duration
@@ -22,7 +22,7 @@ const ToastItem: React.FC<{ notification: Notification }> = ({ notification }) =
       }, notification.duration);
       return () => clearTimeout(timer);
     }
-  }, [notification.id, notification.duration]);
+  }, [notification.duration, handleDismiss]);
   
   const getIcon = () => {
     switch (notification.type) {
