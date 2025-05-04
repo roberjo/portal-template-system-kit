@@ -1,0 +1,50 @@
+name: Test Badge Update Script
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  test-badges:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '20'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Create test coverage data
+      run: |
+        mkdir -p coverage
+        echo '{
+          "total": {
+            "lines": {"total": 1000, "covered": 850, "skipped": 0, "pct": 85},
+            "statements": {"total": 1000, "covered": 820, "skipped": 0, "pct": 82},
+            "functions": {"total": 200, "covered": 170, "skipped": 0, "pct": 85},
+            "branches": {"total": 400, "covered": 320, "skipped": 0, "pct": 80}
+          }
+        }' > coverage/coverage-summary.json
+      
+    - name: Test badge update script
+      run: node scripts/update-badges.js
+      
+    - name: Commit README changes
+      run: |
+        git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        git add README.md
+        git diff --quiet && git diff --staged --quiet || git commit -m "docs: test update code coverage badges [skip ci]"
+        git push origin HEAD:main
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 

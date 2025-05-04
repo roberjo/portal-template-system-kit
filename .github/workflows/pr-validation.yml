@@ -1,0 +1,56 @@
+name: PR Validation
+
+on:
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '20'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run ESLint
+      run: npm run lint
+      
+    - name: Run TypeScript type checking
+      run: npm run typecheck
+      
+    - name: Run tests with coverage
+      run: npm run test:coverage
+      
+    - name: Upload coverage report to GitHub artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: coverage-report
+        path: coverage/
+      
+    - name: Post Coverage Comment
+      uses: MishaKav/jest-coverage-comment@main
+      with:
+        coverage-summary-path: ./coverage/coverage-summary.json
+        title: "Code Coverage Report"
+        summary-title: "Summary"
+        badge-title: "Coverage"
+        hide-comment: false
+        create-new-comment: false
+        hide-summary: false
+        junitxml-path: ./coverage/junit.xml
+        junitxml-title: "Test Results" 

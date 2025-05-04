@@ -17,7 +17,8 @@
     "sonar": "node sonar-project.js",
     "lighthouse": "lhci autorun",
     "quality:full": "npm run quality && npm run sonar && npm run lighthouse",
-    "coverage:open": "node scripts/run-coverage.js"
+    "coverage:open": "node scripts/run-coverage.js",
+    "update:badges": "node scripts/update-badges.js"
   },
   "dependencies": {
     "@fontsource/inter": "^5.0.17",
