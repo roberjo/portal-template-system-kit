@@ -77,7 +77,7 @@ export const SessionTimer = observer(() => {
       });
       clearInterval(intervalId);
     };
-  }, [isAuthenticated, lastActivity, resetInactivityTimer]);
+  }, [isAuthenticated, lastActivity, resetInactivityTimer, updateActivity]);
   
   const handleContinue = () => {
     updateActivity();

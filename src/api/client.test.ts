@@ -112,7 +112,7 @@ describe('API Client', () => {
       
       try {
         await apiClient.get('/error');
-      } catch (error: any) {
+      } catch (error: Error & { intercepted?: boolean }) {
         expect(errorInterceptor).toHaveBeenCalled();
         expect(error.intercepted).toBe(true);
       }

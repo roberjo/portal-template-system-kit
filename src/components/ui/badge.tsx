@@ -14,4 +14,4 @@ function Badge({ className, variant, ...props }: Readonly<BadgeProps>) {
   )
 }
 
-export { Badge, badgeVariants }
+export { Badge }

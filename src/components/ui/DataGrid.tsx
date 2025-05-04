@@ -4,7 +4,7 @@ import { TableData } from '../../store/types';
 
 interface DataGridProps {
   data: TableData;
-  onRowClick?: (row: any) => void;
+  onRowClick?: (row: Record<string, unknown>) => void;
   actions?: React.ReactNode;
   isLoading?: boolean;
 }
@@ -48,7 +48,7 @@ export const DataGrid: React.FC<Readonly<DataGridProps>> = ({
       return [];
     }
 
-    let sortableRows = [...data.data];
+    const sortableRows = [...data.data];
     
     if (sortConfig) {
       sortableRows.sort((a, b) => {
