@@ -105,6 +105,8 @@ jobs:
       run: npm run build
       
     - name: Run Lighthouse CI
-      run: lhci autorun
+      run: lhci autorun --config=lighthouserc.cjs
       continue-on-error: true
+      env:
+        LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
 
