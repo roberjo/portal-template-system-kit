@@ -44,7 +44,7 @@ export const AdminPanel = observer(() => {
           id: user.id,
           name: user.name,
           email: user.email,
-          role: user.role.toLowerCase() as any,
+          role: user.role.toLowerCase() as 'user' | 'admin' | 'manager',
           permissions: ['read:own'],  // Limited permissions for impersonated user
           preferences: {
             theme: 'light',
@@ -187,13 +187,13 @@ export const AdminPanel = observer(() => {
       {
         id: 'select',
         header: '',
-        cell: (row: any) => (
+        cell: (row: Record<string, unknown>) => (
           <div className="flex items-center justify-center">
             <input
               type="radio"
               name="selectedUser"
               checked={selectedUserId === row.id}
-              onChange={() => setSelectedUserId(row.id)}
+              onChange={() => setSelectedUserId(row.id as string)}
               className="h-4 w-4 border border-input rounded bg-background focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
@@ -203,12 +203,12 @@ export const AdminPanel = observer(() => {
       {
         id: 'actions',
         header: 'Actions',
-        cell: (row: any) => (
+        cell: (row: Record<string, unknown>) => (
           <div className="flex items-center space-x-2">
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                handleImpersonateUser(row.id);
+                handleImpersonateUser(row.id as string);
               }}
               className="p-2 text-primary hover:bg-accent rounded-md transition-colors"
               aria-label="Impersonate user"
@@ -218,7 +218,7 @@ export const AdminPanel = observer(() => {
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                dataStore.toggleUserStatus(row.id);
+                dataStore.toggleUserStatus(row.id as string);
               }}
               className={`p-2 hover:bg-accent rounded-md transition-colors ${
                 row.status === 'active' ? 'text-success' : 'text-muted-foreground'

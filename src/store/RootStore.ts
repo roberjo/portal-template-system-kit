@@ -67,7 +67,6 @@ export class RootStore implements IRootStore {
     // Setup Zustand devtools
     if (process.env.NODE_ENV === 'development') {
       try {
-        // @ts-expect-error Import is only used in development
         import('mobx-logger').then(mobxLogger => {
           mobxLogger.enableLogging({
             predicate: () => true,
