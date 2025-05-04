@@ -23,7 +23,7 @@ export interface SpinnerProps
   extends React.HTMLAttributes<HTMLDivElement>,
     VariantProps<typeof spinnerVariants> {}
 
-export const Spinner = React.forwardRef<HTMLDivElement, SpinnerProps>(
+export const Spinner = React.forwardRef<HTMLDivElement, Readonly<SpinnerProps>>(
   ({ className, size, ...props }, ref) => {
     return (
       <div

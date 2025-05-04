@@ -7,7 +7,7 @@ interface ProtectedRouteProps {
   children: React.ReactNode;
 }
 
-export const ProtectedRoute = observer(({ children }: ProtectedRouteProps) => {
+export const ProtectedRoute = observer(({ children }: Readonly<ProtectedRouteProps>) => {
   const location = useLocation();
   const { userStore } = useStore();
   const { isAuthenticated, loading } = userStore;

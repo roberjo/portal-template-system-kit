@@ -10,7 +10,7 @@ interface MainLayoutProps {
   children: React.ReactNode;
 }
 
-export const MainLayout = observer(({ children }: MainLayoutProps) => {
+export const MainLayout = observer(({ children }: Readonly<MainLayoutProps>) => {
   const { sidebarCollapsed } = useStore().uiStore;
   
   return (

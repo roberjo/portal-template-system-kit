@@ -41,7 +41,7 @@ export interface ButtonProps
   tooltip?: string | React.ReactNode;
 }
 
-const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+const Button = React.forwardRef<HTMLButtonElement, Readonly<ButtonProps>>(
   ({ className, variant, size, asChild = false, tooltip, ...props }, ref) => {
     const Comp = asChild ? Slot : "button"
     

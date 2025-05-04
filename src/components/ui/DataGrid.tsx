@@ -18,7 +18,7 @@ interface FilterConfig {
   [key: string]: string;
 }
 
-export const DataGrid: React.FC<DataGridProps> = ({
+export const DataGrid: React.FC<Readonly<DataGridProps>> = ({
   data,
   onRowClick,
   actions,
