@@ -54,6 +54,16 @@ vi.mock('./components/layout/MainLayout', () => ({
   MainLayout: ({ children }: { children: React.ReactNode }) => <div data-testid="main-layout">{children}</div>
 }));
 
+// Type for mocked store function
+type MockStoreFunction = {
+  mockReturnValue: (value: {
+    userStore: {
+      isAuthenticated: boolean;
+      loading: boolean;
+    }
+  }) => void;
+};
+
 describe('Routing', () => {
   describe('ProtectedRoute Component', () => {
     beforeEach(() => {
@@ -62,7 +72,7 @@ describe('Routing', () => {
     
     it('should redirect to login when user is not authenticated', async () => {
       // Mock unauthenticated state
-      (StoreContext.useStore as any).mockReturnValue({
+      (StoreContext.useStore as MockStoreFunction).mockReturnValue({
         userStore: {
           isAuthenticated: false,
           loading: false
@@ -90,7 +100,7 @@ describe('Routing', () => {
     
     it('should show loading state while checking authentication', () => {
       // Mock loading state
-      (StoreContext.useStore as any).mockReturnValue({
+      (StoreContext.useStore as MockStoreFunction).mockReturnValue({
         userStore: {
           isAuthenticated: false,
           loading: true
@@ -118,7 +128,7 @@ describe('Routing', () => {
     
     it('should render protected content when user is authenticated', () => {
       // Mock authenticated state
-      (StoreContext.useStore as any).mockReturnValue({
+      (StoreContext.useStore as MockStoreFunction).mockReturnValue({
         userStore: {
           isAuthenticated: true,
           loading: false
@@ -150,7 +160,7 @@ describe('Routing', () => {
     
     it('should render login page on /login route', async () => {
       // Default to authenticated
-      (StoreContext.useStore as any).mockReturnValue({
+      (StoreContext.useStore as MockStoreFunction).mockReturnValue({
         userStore: {
           isAuthenticated: true,
           loading: false
@@ -169,7 +179,7 @@ describe('Routing', () => {
     
     it('should render dashboard page on root route when authenticated', async () => {
       // Default to authenticated
-      (StoreContext.useStore as any).mockReturnValue({
+      (StoreContext.useStore as MockStoreFunction).mockReturnValue({
         userStore: {
           isAuthenticated: true,
           loading: false

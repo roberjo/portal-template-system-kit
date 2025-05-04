@@ -1,15 +1,41 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { ENV } from '../config/env';
 
+// Define types for user and credentials
+interface UserPreferences {
+  theme: string;
+  notifications: {
+    email: boolean;
+    push: boolean;
+    sms: boolean;
+  };
+}
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  avatar: string;
+  role: string;
+  permissions: string[];
+  preferences: UserPreferences;
+}
+
+interface Credentials {
+  email: string;
+  password: string;
+  remember?: boolean;
+}
+
 // Mock the UserStore implementation
 const mockUserStore = {
-  currentUser: null,
+  currentUser: null as User | null,
   isAuthenticated: false,
   loading: false,
-  error: null,
+  error: null as string | null,
   impersonating: false,
-  originalUser: null,
-  inactivityTimer: null,
+  originalUser: null as User | null,
+  inactivityTimer: null as number | null,
   
   // Mock methods
   applyUserPreferences: vi.fn(),
@@ -24,6 +50,9 @@ const mockUserStore = {
   startImpersonation: vi.fn(),
   stopImpersonation: vi.fn(),
 };
+
+// Define UserStore type based on the mockUserStore
+type UserStoreType = typeof mockUserStore;
 
 // Mock root store
 const mockRootStore = {
@@ -66,7 +95,7 @@ vi.stubGlobal('setTimeout', vi.fn((cb) => {
 vi.stubGlobal('clearTimeout', vi.fn());
 
 describe('UserStore', () => {
-  let userStore: any;
+  let userStore: UserStoreType;
   const mockFetch = global.fetch as ReturnType<typeof vi.fn>;
   
   beforeEach(() => {
@@ -108,7 +137,7 @@ describe('UserStore', () => {
       }
     });
     
-    userStore.login.mockImplementation(async (credentials: any) => {
+    userStore.login.mockImplementation(async (credentials: Credentials) => {
       if (credentials.email === 'admin@example.com' && credentials.password === 'password') {
         userStore.isAuthenticated = true;
         userStore.currentUser = {
@@ -165,7 +194,7 @@ describe('UserStore', () => {
       return Promise.resolve();
     });
     
-    userStore.updatePreferences.mockImplementation((preferences: any) => {
+    userStore.updatePreferences.mockImplementation((preferences: Partial<UserPreferences>) => {
       if (!userStore.currentUser) return;
       userStore.currentUser.preferences = {
         ...userStore.currentUser.preferences,
@@ -173,7 +202,7 @@ describe('UserStore', () => {
       };
     });
     
-    userStore.applyUserPreferences.mockImplementation((user: any) => {
+    userStore.applyUserPreferences.mockImplementation((user: User | null) => {
       if (user?.preferences?.theme) {
         mockRootStore.uiStore.setTheme(user.preferences.theme);
       }

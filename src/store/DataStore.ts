@@ -215,10 +215,13 @@ export class DataStore implements IDataStore {
         // Simulate API latency
         await new Promise(resolve => setTimeout(resolve, 1000));
         
+        // Prepare variable before the switch to avoid lexical declaration warning
+        let newUser: UserData;
+        
         // Handle mock creation
         switch (dataType) {
           case 'user':
-            const newUser: UserData = {
+            newUser = {
               id: Date.now().toString(),
               name: (data.name as string) || 'New User',
               email: (data.email as string) || 'user@example.com',

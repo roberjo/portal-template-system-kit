@@ -129,7 +129,7 @@ const rootStore = new RootStore();
 
 // Add global access for debugging
 if (typeof window !== 'undefined') {
-  // @ts-ignore - Add to window for debugging
+  // @ts-expect-error - Add to window for debugging
   window.__PORTAL_ROOT_STORE = rootStore;
   console.log("Added rootStore to window.__PORTAL_ROOT_STORE for debugging");
 }

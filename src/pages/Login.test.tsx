@@ -28,7 +28,7 @@ describe('Login Component', () => {
     vi.clearAllMocks();
     
     // Default store mock implementation
-    (StoreContext.useStore as any).mockReturnValue({
+    (StoreContext.useStore as MockStoreFunction).mockReturnValue({
       userStore: {
         isAuthenticated: false,
         login: mockLoginFn,
@@ -111,7 +111,7 @@ describe('Login Component', () => {
   
   it('shows loading state during authentication', async () => {
     // Mock loading state
-    (StoreContext.useStore as any).mockReturnValue({
+    (StoreContext.useStore as MockStoreFunction).mockReturnValue({
       userStore: {
         isAuthenticated: false,
         login: vi.fn(() => new Promise(resolve => setTimeout(() => resolve(true), 100))),
@@ -129,7 +129,7 @@ describe('Login Component', () => {
   
   it('displays error message when login fails', async () => {
     // Setup store with error
-    (StoreContext.useStore as any).mockReturnValue({
+    (StoreContext.useStore as MockStoreFunction).mockReturnValue({
       userStore: {
         isAuthenticated: false,
         login: mockLoginFn,
@@ -152,4 +152,16 @@ describe('Login Component', () => {
     expect(emailInput).toBeRequired();
     expect(passwordInput).toBeRequired();
   });
-}); 
+});
+
+// Type for mocked store function
+type MockStoreFunction = {
+  mockReturnValue: (value: {
+    userStore: {
+      isAuthenticated: boolean;
+      login: ReturnType<typeof vi.fn>;
+      loading: boolean;
+      error: string | null;
+    }
+  }) => void;
+}; 
