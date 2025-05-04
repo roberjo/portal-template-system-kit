@@ -71,7 +71,7 @@ jobs:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       with:
         args: >
-          -Dsonar.projectKey=portal-template-system-kit
+          -Dsonar.projectKey=roberjo_portal-template-system-kit
           -Dsonar.organization=${{ github.repository_owner }}
           -Dsonar.sources=src
           -Dsonar.tests=src
