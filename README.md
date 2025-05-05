@@ -13,13 +13,15 @@
 A modern, responsive admin portal template system with authentication, session management, data visualization, and user management features.
 
 Portal Template System Kit is a production-ready foundation for building modern admin interfaces and dashboards. It features session management, data visualization, and role-based access control, all built with best practices for code quality and developer experience.
+
 This template system offers:
-Complete authentication system with session management
-Responsive dashboard with data visualization
-User management with role-based permissions
-Modern UI with dark/light theme support
-Comprehensive testing and code quality tools
-Detailed documentation for developers
+  - Complete authentication system with session management
+  - Responsive dashboard with data visualization
+  - User management with role-based permissions
+  - Modern UI with dark/light theme support
+  - Comprehensive testing and code quality tools
+  - Detailed documentation for developers
+
 Built with React 18, TypeScript, MobX for state management, and styled with Tailwind CSS and shadcn/ui components, this project provides a solid foundation that's both flexible and maintainable.
 
 ![Portal Screenshot](https://via.placeholder.com/800x400.png?text=Portal+Template+System+Kit)
