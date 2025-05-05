@@ -7,6 +7,7 @@ Welcome to the Portal Template System documentation. This documentation provides
 - [Installation](getting-started/installation.md) - Set up your development environment
 - [Quick Start](getting-started/quick-start.md) - Start building with the Portal Template System
 - [Contribution Guide](getting-started/contribution.md) - Learn how to contribute to the project
+- [Developer Onboarding Guide](./DEVELOPER_ONBOARDING.md) - Comprehensive guide for new developers
 
 ## Architecture
 

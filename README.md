@@ -157,6 +157,7 @@ This project includes comprehensive documentation in the `/docs` directory:
 - [Component Documentation](docs/components/overview.md)
 - [Testing Guide](docs/guides/testing.md)
 - [SPA Setup Recommendations](docs/SPA_SETUP_RECOMMENDATIONS.md)
+- [Developer Onboarding Guide](docs/DEVELOPER_ONBOARDING.md)
 
 For more detailed documentation:
 
