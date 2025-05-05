@@ -23,10 +23,11 @@ interface NavItemProps {
   collapsed: boolean;
   childItems?: { to: string, label: string }[];
   requiresAdmin?: boolean;
+  end?: boolean;
 }
 
 const NavItem: React.FC<NavItemProps> = ({ 
-  to, icon: Icon, label, collapsed, childItems, requiresAdmin = false 
+  to, icon: Icon, label, collapsed, childItems, requiresAdmin = false, end = false
 }) => {
   const [isOpen, setIsOpen] = React.useState(false);
   const { currentUser } = rootStore.userStore;
@@ -41,6 +42,7 @@ const NavItem: React.FC<NavItemProps> = ({
       <li>
         <NavLink
           to={to}
+          end={end}
           className={({ isActive }) => 
             `flex items-center py-2 px-4 rounded-md transition-colors relative
              ${isActive ? 'bg-sidebar-accent text-primary' : 'hover:bg-sidebar-accent/50'}`
@@ -63,6 +65,7 @@ const NavItem: React.FC<NavItemProps> = ({
             <li key={item.to}>
               <NavLink
                 to={item.to}
+                end={item.to === "/documents"}
                 className={({ isActive }) => 
                   `block py-1 px-4 rounded-md transition-colors
                    ${isActive ? 'bg-sidebar-accent text-primary' : 'hover:bg-sidebar-accent/50'}`
@@ -142,6 +145,7 @@ export const Sidebar = observer(() => {
                   { to: "/documents", label: "All Documents" },
                   { to: "/documents/upload", label: "Upload Document" }
                 ]}
+                end={true}
               />
               
               <NavItem 
