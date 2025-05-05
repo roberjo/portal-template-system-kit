@@ -8,9 +8,9 @@ import { execSync } from 'child_process';
 const getCoverageData = () => {
   // Possible paths for coverage file
   const possiblePaths = [
-    path.resolve('coverage/coverage-summary.json'),
-    path.resolve('coverage-report/coverage-summary.json'),
-    path.resolve(process.env.GITHUB_WORKSPACE, 'coverage/coverage-summary.json')
+    path.resolve('./coverage/coverage-summary.json'),
+    path.resolve('./coverage-report/coverage-summary.json'),
+    path.resolve(process.env.GITHUB_WORKSPACE || '.', 'coverage/coverage-summary.json')
   ];
   
   // Try each path
@@ -63,7 +63,10 @@ const getCoverageData = () => {
 // Get date for last updated
 const getFormattedDate = () => {
   const date = new Date();
-  return date.toISOString().split('T')[0];
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 };
 
 // Update README badges
@@ -105,23 +108,24 @@ const updateReadmeBadges = () => {
   }
   
   // Add Last Updated badge
-  const lastUpdatedBadge = `![Last Updated](https://img.shields.io/badge/Last%20Updated-${getFormattedDate()}-blue)`;
+  const formattedDate = getFormattedDate();
+  const lastUpdatedBadge = `![Last Updated](https://img.shields.io/badge/Last%20Updated-${formattedDate.replace(/-/g, '--')}-blue)`;
   
   if (readmeContent.includes('![Last Updated]')) {
     readmeContent = readmeContent.replace(
-      /!\[Last Updated\]\(https:\/\/img\.shields\.io\/badge\/Last%20Updated-[^)]+\)/,
+      /!\[Last Updated\].*?\)/,
       lastUpdatedBadge
     );
   } else {
     // Add after coverage badge or license badge
     if (readmeContent.includes('![Code Coverage]')) {
       readmeContent = readmeContent.replace(
-        /(!\[Code Coverage\]\([^)]+\))/,
+        /(!\[Code Coverage\].*?\))/,
         `$1\n${lastUpdatedBadge}`
       );
     } else {
       readmeContent = readmeContent.replace(
-        /(!\[License\]\([^)]+\))/,
+        /(!\[License\].*?\))/,
         `$1\n${lastUpdatedBadge}`
       );
     }
@@ -129,6 +133,7 @@ const updateReadmeBadges = () => {
   
   // Add detailed coverage section in Testing section
   if (coverage) {
+    const formattedDate = getFormattedDate();
     const coverageDetails = `
 ## 📊 Code Coverage
 
@@ -139,7 +144,7 @@ const updateReadmeBadges = () => {
 | Functions  | ${coverage.functions}% |
 | Branches   | ${coverage.branches}% |
 
-Last updated: ${getFormattedDate()}
+Last updated: ${formattedDate}
 `;
 
     if (readmeContent.includes('## 📊 Code Coverage')) {
@@ -166,6 +171,12 @@ Last updated: ${getFormattedDate()}
   } else {
     console.log('No coverage data available. Skipping coverage details section.');
   }
+  
+  // Also replace the old date in the coverage section
+  readmeContent = readmeContent.replace(
+    /Last updated: \d{4}-\d{2}-\d{2}/g,
+    `Last updated: ${formattedDate}`
+  );
   
   fs.writeFileSync(readmePath, readmeContent);
   console.log('README updated with latest badges and coverage information');
