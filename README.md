@@ -8,7 +8,7 @@
 [![shadcn/ui](https://img.shields.io/badge/shadcn/ui-latest-black)](https://ui.shadcn.com/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)
 ![Code Coverage](https://img.shields.io/badge/Coverage-17%25-red)
-![Last Updated](https://img.shields.io/badge/Last%20Updated-2023--05--04-blue)](LICENSE)
+![Last Updated](https://img.shields.io/badge/Last%20Updated-2025--05--05-blue)](LICENSE)
 
 A modern, responsive admin portal template system with authentication, session management, data visualization, and user management features.
 
@@ -173,17 +173,17 @@ npm run test
 npm run test:coverage
 ```
 
+
 ## 📊 Code Coverage
 
 | Category   | Coverage |
 |------------|----------|
-| Lines      | 6.04% |
-| Statements | 6.04% |
+| Lines      | 6.03% |
+| Statements | 6.03% |
 | Functions  | 14.89% |
 | Branches   | 39.33% |
 
-Last updated: 2023-05-04
-
+Last updated: 2025-05-05
 ## 📦 Building for Production
 
 ```bash
