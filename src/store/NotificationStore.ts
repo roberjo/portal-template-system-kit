@@ -97,6 +97,11 @@ export class NotificationStore implements INotificationStore {
     this.toasts = this.toasts.filter(t => t.id !== id);
   }
   
+  dismissToast = (id: string) => {
+    // Remove from toasts only, but keep in notifications
+    this.toasts = this.toasts.filter(t => t.id !== id);
+  }
+  
   clearAll = () => {
     this.notifications = [];
     this.toasts = [];

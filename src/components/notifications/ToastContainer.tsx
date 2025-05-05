@@ -2,7 +2,7 @@ import React, { useEffect, useCallback } from 'react';
 import { observer } from 'mobx-react-lite';
 import { CheckCircle, AlertCircle, Info, AlertTriangle, X } from 'lucide-react';
 import rootStore from '../../store/RootStore';
-import { Notification } from '../../store/NotificationStore';
+import { Notification } from '../../store/types';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
 const ToastItem: React.FC<{ notification: Notification }> = ({ notification }) => {

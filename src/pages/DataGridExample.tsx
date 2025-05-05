@@ -285,19 +285,19 @@ export const DataGridExample = observer(() => {
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <p className="text-sm text-muted-foreground">Name</p>
-                          <p className="font-medium">{row.name}</p>
+                          <p className="font-medium">{String(row.name || '')}</p>
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground">Email</p>
-                          <p className="font-medium">{row.email}</p>
+                          <p className="font-medium">{String(row.email || '')}</p>
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground">Role</p>
-                          <p className="font-medium">{row.role}</p>
+                          <p className="font-medium">{String(row.role || '')}</p>
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground">Department</p>
-                          <p className="font-medium">{row.department}</p>
+                          <p className="font-medium">{String(row.department || '')}</p>
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground">Status</p>
@@ -308,12 +308,14 @@ export const DataGridExample = observer(() => {
                                 ? 'bg-destructive/20 text-destructive'
                                 : 'bg-warning/20 text-warning'
                           }`}>
-                            {row.status.charAt(0).toUpperCase() + row.status.slice(1)}
+                            {typeof row.status === 'string' 
+                              ? row.status.charAt(0).toUpperCase() + row.status.slice(1) 
+                              : ''}
                           </div>
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground">Last Login</p>
-                          <p className="font-medium">{row.lastLogin}</p>
+                          <p className="font-medium">{String(row.lastLogin || '')}</p>
                         </div>
                       </div>
                     </div>

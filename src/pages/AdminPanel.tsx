@@ -33,28 +33,34 @@ export const AdminPanel = observer(() => {
       content: (
         <div>
           <p className="mb-4">
-            You are about to impersonate <strong>{user.name}</strong>. While impersonating, you will see the portal as this user would see it, with their permissions and access levels.
+            Are you sure you want to impersonate <strong>{user.name}</strong>?
           </p>
-          <p>Do you want to continue?</p>
+          <p className="text-yellow-600 dark:text-yellow-400">
+            You will be acting as this user until you end the impersonation session.
+          </p>
         </div>
       ),
-      onConfirm: () => {
-        // Convert database user to application user format
-        userStore.startImpersonation({
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          role: user.role.toLowerCase() as 'user' | 'admin' | 'manager',
-          permissions: ['read:own'],  // Limited permissions for impersonated user
-          preferences: {
-            theme: 'light',
-            notifications: {
-              email: true,
-              push: true,
-              sms: false
-            }
-          }
-        });
+      onConfirm: async () => {
+        try {
+          // Pass just the userId string instead of an object
+          await userStore.startImpersonation(userId);
+          
+          notificationStore.addNotification({
+            id: Date.now().toString(),
+            type: 'info',
+            title: 'Impersonation Started',
+            message: `You are now impersonating ${user.name}.`,
+            duration: 5000
+          });
+        } catch (error) {
+          notificationStore.addNotification({
+            id: Date.now().toString(),
+            type: 'error',
+            title: 'Impersonation Failed',
+            message: 'Could not start impersonation session.',
+            duration: 5000
+          });
+        }
       },
       confirmText: 'Start Impersonation',
       cancelText: 'Cancel'

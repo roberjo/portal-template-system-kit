@@ -394,4 +394,30 @@ export class DataStore implements IDataStore {
       });
     }
   }
+  
+  // Add the missing method
+  updateUserRole = (userId: string, newRole: string): void => {
+    this.users = this.users.map(user => {
+      if (user.id === userId) {
+        return {
+          ...user,
+          role: newRole
+        };
+      }
+      return user;
+    });
+    
+    // Update the table data if it exists
+    if (this.tableData.users && this.tableData.users.data) {
+      this.tableData.users.data = this.tableData.users.data.map(user => {
+        if (user.id === userId) {
+          return {
+            ...user,
+            role: newRole
+          };
+        }
+        return user;
+      });
+    }
+  }
 }

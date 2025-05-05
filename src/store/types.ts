@@ -5,6 +5,8 @@ import { DocumentStore } from '@/features/documents/store';
 import { RootStore } from './RootStore';
 
 // UI Store types
+export type Theme = 'light' | 'dark';
+
 export interface ModalOptions {
   title: string;
   content: ReactNode;
@@ -13,15 +15,18 @@ export interface ModalOptions {
   confirmText?: string;
   cancelText?: string;
   size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
+  closeOnOverlayClick?: boolean;
 }
 
 export interface IUIStore {
   sidebarCollapsed: boolean;
   modalOpen: boolean;
   modalOptions: ModalOptions | null;
+  theme: Theme;
   toggleSidebar: () => void;
   openModal: (options: ModalOptions) => void;
   closeModal: () => void;
+  setTheme: (theme: Theme) => void;
 }
 
 // User Store types
@@ -178,6 +183,7 @@ export interface INotificationStore {
   markAsRead: (id: string) => void;
   markAllAsRead: () => void;
   removeNotification: (id: string) => void;
+  dismissToast: (id: string) => void;
   clearAll: () => void;
 }
 
@@ -186,8 +192,10 @@ export interface TableData {
   columns: {
     id: string;
     header: string;
-    accessorKey: string;
+    accessorKey?: string;
     cell?: (value: Record<string, unknown>) => React.ReactNode;
+    sortable?: boolean;
+    filterable?: boolean;
   }[];
   data: Record<string, unknown>[];
   pagination?: {

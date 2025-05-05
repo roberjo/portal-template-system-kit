@@ -3,7 +3,7 @@ import { observer } from 'mobx-react-lite';
 import { AlertCircle, Bell, CheckCircle, Info, Trash, AlertTriangle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import rootStore from '../store/RootStore';
-import { Notification } from '../store/NotificationStore';
+import { Notification } from '../store/types';
 
 const NotificationItem: React.FC<{ notification: Notification }> = ({ notification }) => {
   const { markAsRead } = rootStore.notificationStore;

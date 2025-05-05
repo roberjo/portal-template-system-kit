@@ -188,13 +188,13 @@ export const DataGrid: React.FC<Readonly<DataGridProps>> = ({
             ) : (
               paginatedRows.map((row, rowIndex) => (
                 <tr 
-                  key={row.id || `row-${rowIndex}`} 
+                  key={typeof row.id === 'string' || typeof row.id === 'number' ? row.id : `row-${rowIndex}`} 
                   onClick={() => onRowClick && onRowClick(row)}
                   className={onRowClick ? "hover:bg-accent/50 cursor-pointer" : ""}
                 >
                   {data && data.columns && data.columns.map((column, colIndex) => (
-                    <td key={`${row.id || rowIndex}-${column.id || colIndex}`} className="px-4 py-3">
-                      {column.cell ? column.cell(row) : (row[column.accessorKey || column.id] || '')}
+                    <td key={`${typeof row.id === 'string' || typeof row.id === 'number' ? row.id : rowIndex}-${column.id || colIndex}`} className="px-4 py-3">
+                      {column.cell ? column.cell(row) : (column.accessorKey && row[column.accessorKey] !== undefined ? String(row[column.accessorKey]) : '')}
                     </td>
                   ))}
                 </tr>

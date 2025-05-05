@@ -348,4 +348,7 @@ export class UserStore implements IUserStore {
     this.originalUser = null;
     this.impersonating = false;
   });
+  
+  // Alias for stopImpersonation for backward compatibility
+  endImpersonation = this.stopImpersonation;
 }
