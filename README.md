@@ -156,6 +156,7 @@ This project includes comprehensive documentation in the `/docs` directory:
 - [API Documentation](docs/api/overview.md)
 - [Component Documentation](docs/components/overview.md)
 - [Testing Guide](docs/guides/testing.md)
+- [SPA Setup Recommendations](docs/SPA_SETUP_RECOMMENDATIONS.md)
 
 For more detailed documentation:
 

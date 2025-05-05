@@ -115,3 +115,7 @@ To set up the CI/CD pipeline, you need to add the following secrets to your GitH
 
 - `SONAR_TOKEN`: Your SonarQube authentication token
 - `LHCI_GITHUB_APP_TOKEN`: Your Lighthouse CI GitHub app token (if using Lighthouse CI with GitHub integration) 
+
+## Best Practices and Recommendations
+
+For a comprehensive guide on recommended practices for React SPA projects, including testing strategies, code quality tools, CI/CD setup, and more, see our [SPA Setup Recommendations](docs/SPA_SETUP_RECOMMENDATIONS.md) document. 
